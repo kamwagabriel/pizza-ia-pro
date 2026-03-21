@@ -5,10 +5,12 @@ from flask import Flask, render_template, send_file
 from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'pizza_premium_95'
+app.config['SECRET_KEY'] = 'pizza_pro_95'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Nom du fichier Excel du jour
+# Compteur de commandes qui s'incrémente
+order_counter = 0
+
 def get_csv_name():
     return f"BILAN_VENTES_{datetime.now().strftime('%d-%m-%Y')}.csv"
 
@@ -25,10 +27,15 @@ def download_excel():
     filename = get_csv_name()
     if os.path.exists(filename):
         return send_file(filename, as_attachment=True)
-    return "Aucune vente enregistrée pour le moment.", 404
+    return "Aucun bilan pour aujourd'hui.", 404
 
 @socketio.on('new_order')
 def handle_new_order(data):
+    global order_counter
+    order_counter += 1
+    # On génère le numéro de commande (ex: 001, 002...)
+    data['order_num'] = f"{order_counter:03d}"
+    data['time'] = datetime.now().strftime("%H:%M")
     emit('new_order', data, broadcast=True)
 
 @socketio.on('finish_order_excel')
@@ -39,14 +46,15 @@ def handle_finish_excel(data):
         with open(filename, mode='a', newline='', encoding='utf-8-sig') as f:
             writer = csv.writer(f, delimiter=';')
             if not file_exists:
-                writer.writerow(['HEURE', 'CLIENT', 'TYPE', 'COMMANDE', 'TOTAL (€)'])
-            
+                writer.writerow(['HEURE', 'N° CMD', 'CLIENT', 'TEL', 'TYPE', 'PIZZA', 'TOTAL (€)'])
             writer.writerow([
                 datetime.now().strftime("%H:%M"),
-                data.get('nom', 'Inconnu'),
-                data.get('type', 'N/A').upper(),
-                data.get('pizza', 'N/A'),
-                f"{data.get('total', '0')}"
+                data.get('order_num'),
+                data.get('nom'),
+                data.get('tel'),
+                data.get('type').upper(),
+                data.get('pizza'),
+                data.get('total')
             ])
     except Exception as e:
         print(f"Erreur Excel : {e}")
