@@ -2,43 +2,96 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>🍕 CONSOLE PIZZA PRO</title>
+    <title>🍕 ALLO PIZZA PRO - CONSOLE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; text-align: center; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-top: 20px; }
-        .card { background: #1e293b; padding: 20px; border-radius: 12px; border: 2px solid #3b82f6; text-align: left; position: relative; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); animation: blink 1.5s infinite; }
-        @keyframes blink { 50% { border-color: transparent; } }
-        .btn { background: #ef4444; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 15px; font-weight: bold; font-size: 16px; }
-        .type { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #fbbf24; color: #000; margin-bottom: 10px; }
-        .pizza-list { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 10px 0; font-size: 18px; font-weight: bold; }
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --success: #22c55e; --danger: #ef4444; --warning: #fbbf24; --text: #f8fafc; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; overflow-x: hidden; }
+        header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 2px solid var(--card); margin-bottom: 20px; }
+        .main-layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
+        .card { background: var(--card); border-radius: 15px; padding: 20px; border-left: 6px solid var(--accent); position: relative; transition: 0.3s; animation: pop 0.3s ease-out; margin-bottom: 15px; }
+        @keyframes pop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .urgent { border-left-color: var(--danger); animation: blink 1.5s infinite; }
+        @keyframes blink { 50% { box-shadow: 0 0 20px var(--danger); } }
+        .price-tag { position: absolute; top: 15px; right: 15px; background: var(--success); padding: 5px 12px; border-radius: 8px; font-weight: 800; font-size: 1.2rem; }
+        .btn { border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
+        .btn-cook { background: var(--warning); color: #000; }
+        .btn-done { background: var(--success); }
+        .btn-excel { background: #1d6f42; width: 100%; margin-top: 15px; display: block; text-decoration: none; text-align: center; color: white; padding: 12px; border-radius: 8px; font-weight: bold; }
+        .p-list { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin: 15px 0; border: 1px dashed #475569; font-size: 1.1rem; }
+        .maps-btn { display: block; background: #4285F4; color: white; text-decoration: none; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 10px; font-weight: bold; }
+        .sidebar { background: var(--card); padding: 20px; border-radius: 15px; position: sticky; top: 20px; height: fit-content; }
     </style>
 </head>
 <body>
-    <h1>🍕 TABLEAU DE BORD CUISINE</h1>
-    <div id="orders" class="grid"></div>
+    <header>
+        <h1 style="margin:0;">🍕 ALLO PIZZA <span style="color:var(--accent)">PRO</span></h1>
+        <div id="clock" style="font-size: 24px; font-weight: bold; color: var(--accent);">00:00:00</div>
+    </header>
+
+    <div class="main-layout">
+        <div id="orders-container"></div>
+        <div class="sidebar">
+            <canvas id="salesChart"></canvas>
+            <h3 style="margin-top:20px; color:var(--warning)">Bilan du jour</h3>
+            <div id="total-money" style="font-size: 30px; font-weight: 800; color: var(--success);">0.00 €</div>
+            <a href="/download_excel" class="btn-excel">📥 TÉLÉCHARGER L'EXCEL</a>
+            <hr style="border: 0; border-top: 1px solid #334155; margin: 20px 0;">
+            <div id="history" style="font-size: 13px; max-height: 200px; overflow-y: auto;"></div>
+        </div>
+    </div>
 
     <audio id="bell" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"></audio>
 
-    <script>
-        const socket = io();
-        socket.on('new_order', (data) => {
-            const container = document.getElementById('orders');
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.id = data.id;
-            
-            card.innerHTML = `
-                <div class="type">${data.type.toUpperCase()}</div>
-                <h2 style="margin:0;">👤 ${data.nom}</h2>
-                <div class="pizza-list">🍕 ${data.pizza}</div>
-                <div style="color:#94a3b8;">🥤 Extras : ${data.extra}</div>
-                ${data.adresse && data.adresse !== 'N/A' ? `<div style="margin-top:10px; color:#3b82f6; font-weight:bold;">📍 ${data.adresse}</div>` : ''}
-                <button class="btn" onclick="this.parentElement.remove()">TERMINER ✅</button>
-            `;
-            container.prepend(card);
-            document.getElementById('bell').play();
-        });
-    </script>
+<script>
+    const socket = io();
+    let dailyTotal = 0;
+    let stats = { livraison: 0, emporte: 0, place: 0 };
+
+    setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
+
+    const salesChart = new Chart(document.getElementById('salesChart'), {
+        type: 'doughnut',
+        data: { labels: ['Livraison', 'Emporté', 'Sur Place'], datasets: [{ data: [0, 0, 0], backgroundColor: ['#3b82f6', '#22c55e', '#fbbf24'] }] },
+        options: { plugins: { legend: { labels: { color: 'white' } } } }
+    });
+
+    socket.on('new_order', (data) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.id = `card-${data.id}`;
+        
+        let mapsHtml = (data.type === 'livraison' && data.adresse !== 'N/A') ? `<a href="https://www.google.com/maps/search/${encodeURIComponent(data.adresse)}" target="_blank" class="maps-btn">📍 ITINÉRAIRE GOOGLE MAPS</a>` : '';
+
+        card.innerHTML = `
+            <div class="price-tag">${data.total} €</div>
+            <div style="font-weight:bold; color:var(--warning); text-transform:uppercase; font-size:12px;">${data.type}</div>
+            <h2 style="margin:5px 0;">👤 ${data.nom}</h2>
+            <div class="p-list">🍕 ${data.pizza}<br><small style="color:#94a3b8">🥤 ${data.extra || 'Aucun'}</small></div>
+            ${mapsHtml}
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-cook" onclick="setCook('${data.id}')">👨‍🍳 CUISINE</button>
+                <button class="btn btn-done" onclick="finish('${data.id}','${data.type}','${data.total}','${data.nom}','${data.pizza}')">✅ PRÊT</button>
+            </div>
+        `;
+        document.getElementById('orders-container').prepend(card);
+        document.getElementById('bell').play();
+        setTimeout(() => card.classList.add('urgent'), 600000); // Devient urgent après 10 min
+    });
+
+    function setCook(id) { document.getElementById(`card-${id}`).style.borderLeftColor = "#fbbf24"; }
+
+    function finish(id, type, total, nom, pizza) {
+        socket.emit('finish_order_excel', {nom, type, total, pizza});
+        dailyTotal += parseFloat(total);
+        document.getElementById('total-money').innerText = dailyTotal.toFixed(2) + " €";
+        stats[type]++;
+        salesChart.data.datasets[0].data = [stats.livraison, stats.emporte, stats.place];
+        salesChart.update();
+        document.getElementById('history').innerHTML = `<div><b>${new Date().toLocaleTimeString()}</b> - ${nom} (${total}€)</div>` + document.getElementById('history').innerHTML;
+        document.getElementById(`card-${id}`).remove();
+    }
+</script>
 </body>
 </html>
