@@ -2,81 +2,116 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALLO PIZZA PRO</title>
+    <title>🍕 ALLO PIZZA PRO - Console de Contrôle</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* TON STYLE D'ORIGINE */
-        body { font-family: sans-serif; background: #f4f4f4; margin: 0; padding: 20px; text-align: center; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: left; }
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --success: #22c55e; --danger: #ef4444; --warning: #fbbf24; --text: #f8fafc; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        .main-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
+        .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
         
-        /* LES BOUTONS DE COMMANDE */
-        .btn-group { margin-bottom: 20px; }
-        .btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; margin: 5px; }
-        .btn-place { background: #FFA500; }
-        .btn-emporte { background: #28a745; }
-        .btn-livraison { background: #007bff; }
+        .card { background: var(--card); border-radius: 12px; padding: 15px; border: 2px solid transparent; box-shadow: 0 4px 10px rgba(0,0,0,0.3); position: relative; }
+        .card.new { border-color: var(--accent); animation: blink 1.5s infinite; }
+        @keyframes blink { 50% { border-color: transparent; } }
+
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; text-transform: uppercase; margin-bottom: 8px; }
+        .badge-place { background: var(--warning); color: black; }
+        .badge-emporte { background: var(--success); color: white; }
+        .badge-livraison { background: var(--accent); color: white; }
+
+        .p-item { background: #334155; padding: 10px; margin: 5px 0; border-radius: 6px; border-left: 4px solid var(--warning); font-size: 15px; font-weight: bold; }
+        .extra-item { background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; font-size: 13px; color: #cbd5e1; margin-top: 5px; border: 1px dashed #475569; }
         
-        input, textarea { width: 100%; margin: 8px 0; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        .btn-valider { background: #e74c3c; color: white; border: none; width: 100%; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .type-label { font-size: 12px; font-weight: bold; color: #666; text-transform: uppercase; }
+        /* LE BOUTON MAPS */
+        .maps-link { display: block; background: #4285F4; color: white; text-decoration: none; padding: 8px; border-radius: 6px; text-align: center; font-size: 12px; margin-top: 10px; font-weight: bold; }
+        .maps-link:hover { background: #357ae8; }
+
+        .btn { border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; width: 100%; margin-top: 10px; }
+        .btn-finish { background: var(--danger); }
+        .btn-cook { background: #475569; }
+        
+        .sidebar { display: flex; flex-direction: column; gap: 20px; }
+        .panel { background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid #334155; }
     </style>
 </head>
 <body>
 
-    <h1>🍕 ALLO PIZZA PRO</h1>
+    <header>
+        <h1>🍕 ALLO PIZZA <span style="color:var(--accent)">PRO</span></h1>
+        <div id="clock" style="font-size: 20px; color: var(--accent);">00:00:00</div>
+    </header>
 
-    <div class="btn-group">
-        <button class="btn btn-place" onclick="ajouterCard('SUR PLACE')">🍽️ SUR PLACE</button>
-        <button class="btn btn-emporte" onclick="ajouterCard('A EMPORTER')">🛍️ EMPORTÉ</button>
-        <button class="btn btn-livraison" onclick="ajouterCard('LIVRAISON')">🚚 LIVRAISON</button>
+    <div class="main-layout">
+        <div class="orders-grid" id="orders-container"></div>
+
+        <div class="sidebar">
+            <div class="panel"><canvas id="salesChart"></canvas></div>
+            <div class="panel">
+                <h3 style="margin:0 0 10px 0; font-size:14px; color:var(--warning);">HISTORIQUE VENTES</h3>
+                <div id="history-list" style="font-size: 12px; max-height: 300px; overflow-y: auto;"></div>
+            </div>
+        </div>
     </div>
 
-    <div id="grid" class="grid"></div>
+    <audio id="bell" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"></audio>
 
     <script>
         const socket = io();
+        let stats = { livraison: 0, emporte: 0, place: 0 };
 
-        function ajouterCard(type) {
-            const grid = document.getElementById('grid');
-            const id = Date.now();
-            const div = document.createElement('div');
-            div.className = 'card';
-            div.id = `card-${id}`;
+        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
 
-            let contenu = `
-                <div class="type-label">${type}</div>
-                <input type="text" id="nom-${id}" placeholder="${type === 'SUR PLACE' ? 'N° de Table' : 'Nom Client'}">
-                <textarea id="pizzas-${id}" placeholder="Pizzas..."></textarea>
-                <input type="text" id="extra-${id}" placeholder="Boissons & Desserts...">
+        const salesChart = new Chart(document.getElementById('salesChart'), {
+            type: 'doughnut',
+            data: { labels: ['Livraison', 'Emporté', 'Sur Place'], datasets: [{ data: [0, 0, 0], backgroundColor: ['#3b82f6', '#22c55e', '#fbbf24'], borderWidth: 0 }] },
+            options: { plugins: { legend: { labels: { color: 'white' } } } }
+        });
+
+        socket.on('new_order', (data) => {
+            const container = document.getElementById('orders-container');
+            const card = document.createElement('div');
+            card.id = `order-${data.id}`;
+            card.className = 'card new';
+            
+            const badgeLabel = data.type === 'place' ? 'SUR PLACE' : (data.type === 'emporte' ? 'EMPORTÉ' : 'LIVRAISON');
+            
+            let cardHtml = `
+                <div class="badge badge-${data.type}">${badgeLabel}</div>
+                <div style="font-size:18px; font-weight:bold; margin-bottom:10px;">👤 ${data.nom}</div>
+                <div class="p-item">🍕 ${data.pizza}</div>
+                ${data.extra ? `<div class="extra-item">🥤 ${data.extra}</div>` : ''}
             `;
 
-            if (type === 'LIVRAISON') {
-                contenu += `<input type="text" id="adresse-${id}" placeholder="Adresse de livraison...">`;
+            // AJOUT DU LIEN GOOGLE MAPS SI LIVRAISON
+            if(data.type === 'livraison' && data.adresse && data.adresse !== 'N/A') {
+                const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.adresse)}`;
+                cardHtml += `<a href="${mapUrl}" target="_blank" class="maps-link">📍 VOIR L'ADRESSE (MAPS)</a>`;
             }
 
-            contenu += `<button class="btn-valider" onclick="envoyer('${id}', '${type}')">VALIDER</button>`;
+            cardHtml += `
+                <div style="display:flex; gap:5px; margin-top:10px;">
+                    <button class="btn btn-cook" onclick="this.closest('.card').classList.remove('new')">CUISINE</button>
+                    <button class="btn btn-finish" onclick="archiveOrder('${data.id}', '${data.type}', '${data.nom}')">FINIR</button>
+                </div>
+            `;
             
-            div.innerHTML = contenu;
-            grid.prepend(div);
-        }
+            card.innerHTML = cardHtml;
+            container.prepend(card);
+            document.getElementById('bell').play();
+        });
 
-        function envoyer(id, type) {
-            const data = {
-                id: id,
-                type: type,
-                nom: document.getElementById(`nom-${id}`).value,
-                pizzas: document.getElementById(`pizzas-${id}`).value,
-                extra: document.getElementById(`extra-${id}`).value,
-                adresse: type === 'LIVRAISON' ? document.getElementById(`adresse-${id}`).value : 'N/A'
-            };
+        function archiveOrder(id, type, nom) {
+            stats[type]++;
+            salesChart.data.datasets[0].data = [stats.livraison, stats.emporte, stats.place];
+            salesChart.update();
 
-            socket.emit('new_order', data);
-            
-            const card = document.getElementById(`card-${id}`);
-            card.innerHTML = "<h3 style='text-align:center; color:green;'>✅ ENVOYÉ !</h3>";
-            setTimeout(() => card.remove(), 2000);
+            const hist = document.getElementById('history-list');
+            const time = new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+            hist.innerHTML = `<div style="padding:5px; border-bottom:1px solid #334155;"><b>${time}</b> - ${nom} (${type})</div>` + hist.innerHTML;
+
+            document.getElementById(`order-${id}`).remove();
         }
     </script>
 </body>
