@@ -3,120 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🍕 CAISSE ALLO PIZZA</title>
+    <title>🍕 CAISSE PRO V3</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #111827; color: white; margin: 0; padding: 10px; }
-        .header { background: #ef4444; padding: 10px; border-radius: 12px; text-align: center; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
-        .section-title { font-size: 12px; font-weight: bold; color: #94a3b8; text-transform: uppercase; margin: 15px 0 5px 5px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; margin: 0; padding: 10px; }
+        .header { background: #ef4444; padding: 10px; border-radius: 12px; text-align: center; margin-bottom: 10px; }
+        .section-title { font-size: 11px; font-weight: bold; color: #94a3b8; text-transform: uppercase; margin: 15px 0 5px 5px; }
         
-        .size-selector { display: flex; gap: 8px; }
-        .size-btn { flex: 1; padding: 12px; border: 2px solid #374151; background: #1f2937; color: white; border-radius: 10px; cursor: pointer; font-weight: 800; transition: 0.2s; }
-        .size-btn.active { border-color: #ef4444; background: #ef4444; transform: translateY(-2px); }
+        /* Grilles Boutons */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .btn-item { background: #1e293b; border: 2px solid #334155; color: white; padding: 12px; border-radius: 10px; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .btn-item.active { border-color: #ef4444; background: #ef4444; }
+        .btn-item.selected { border-color: #22c55e; background: #064e3b; }
 
-        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .pizza-btn { background: #1f2937; border: 2px solid #374151; color: white; padding: 15px; border-radius: 12px; cursor: pointer; text-align: center; transition: 0.2s; }
-        .pizza-btn.selected { border-color: #22c55e; background: #064e3b; box-shadow: 0 0 10px rgba(34, 197, 94, 0.4); }
+        /* Tailles Junior/Senior/Mega */
+        .size-box { display: flex; gap: 5px; margin-bottom: 10px; }
+        .size-btn { flex: 1; padding: 10px; background: #1e293b; border: 2px solid #334155; color: white; border-radius: 8px; font-weight: bold; }
+        .size-btn.active { background: #3b82f6; border-color: #3b82f6; }
 
-        .form-group { background: #1f2937; padding: 15px; border-radius: 15px; margin-top: 20px; border: 1px solid #374151; }
-        .type-selector { display: flex; gap: 5px; margin-bottom: 10px; }
-        .type-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; color: white; font-weight: bold; opacity: 0.4; cursor: pointer; }
-        .type-btn.active { opacity: 1; transform: scale(1.05); }
-
-        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #374151; background: #111827; color: white; box-sizing: border-box; font-size: 16px; }
-        .btn-send { background: #22c55e; color: white; width: 100%; border: none; padding: 18px; border-radius: 10px; font-weight: bold; font-size: 20px; margin-top: 10px; cursor: pointer; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3); }
+        .order-zone { background: #1e293b; padding: 15px; border-radius: 15px; margin-top: 15px; border: 1px solid #334155; }
+        input { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
+        .btn-send { background: #22c55e; color: white; width: 100%; border: none; padding: 18px; border-radius: 10px; font-weight: bold; font-size: 18px; margin-top: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div class="header"><h2>🍕 CAISSE ALLO PIZZA</h2></div>
+    <div class="header"><h3>🍕 ALLO PIZZA CAISSE</h3></div>
 
-    <div class="section-title">1. Choisir la Taille</div>
-    <div class="size-selector">
-        <button id="size-Junior" class="size-btn" onclick="setSize('Junior', 0)">JUNIOR</button>
-        <button id="size-Senior" class="size-btn active" onclick="setSize('Senior', 3)">SENIOR</button>
-        <button id="size-Mega" class="size-btn" onclick="setSize('Mega', 7)">MEGA</button>
+    <div class="section-title">1. Taille</div>
+    <div class="size-box">
+        <button id="s-Junior" class="size-btn" onclick="setSize('Junior', 0)">JUNIOR</button>
+        <button id="s-Senior" class="size-btn active" onclick="setSize('Senior', 3)">SENIOR</button>
+        <button id="s-Mega" class="size-btn" onclick="setSize('Mega', 7)">MEGA</button>
     </div>
 
-    <div class="section-title">2. Choisir la Pizza</div>
-    <div class="menu-grid">
-        <div class="pizza-btn" id="p-Marguerita" onclick="selectPizza('Marguerita', 8)"><b>Marguerita</b></div>
-        <div class="pizza-btn" id="p-Reine" onclick="selectPizza('Reine', 10)"><b>Reine</b></div>
-        <div class="pizza-btn" id="p-4Fromages" onclick="selectPizza('4Fromages', 12)"><b>4 Fromages</b></div>
-        <div class="pizza-btn" id="p-Calzone" onclick="selectPizza('Calzone', 11)"><b>Calzone</b></div>
+    <div class="section-title">2. Pizzas</div>
+    <div class="grid">
+        <button class="btn-item pz" id="p-Marguerita" onclick="selectPiz('Marguerita', 8)">Marguerita</button>
+        <button class="btn-item pz" id="p-Reine" onclick="selectPiz('Reine', 10)">Reine</button>
+        <button class="btn-item pz" id="p-4Fromages" onclick="selectPiz('4Fromages', 12)">4 Fromages</button>
+        <button class="btn-item pz" id="p-Calzone" onclick="selectPiz('Calzone', 11)">Calzone</button>
     </div>
 
-    <div class="form-group">
-        <div class="type-selector">
-            <button id="btn-place" class="type-btn active" style="background:#f39c12" onclick="setType('place')">SUR PLACE</button>
-            <button id="btn-emporte" class="type-btn" style="background:#22c55e" onclick="setType('emporte')">EMPORTÉ</button>
-            <button id="btn-livraison" class="type-btn" style="background:#3b82f6" onclick="setType('livraison')">LIVRER</button>
-        </div>
-        
-        <input type="text" id="nom" placeholder="Nom du client">
-        <input type="tel" id="tel" placeholder="N° de Téléphone">
-        <input type="text" id="p_display" placeholder="Sélectionnez une pizza..." readonly style="color:#fbbf24; font-weight:bold; text-align:center; border:none; background:transparent;">
-        <input type="text" id="adresse" placeholder="Adresse complète..." style="display:none;">
-        
-        <button class="btn-send" onclick="envoyer()">ENVOYER EN CUISINE 🚀</button>
+    <div class="section-title">3. Boissons & Desserts</div>
+    <div class="grid">
+        <button class="btn-item" onclick="addExtra('Coca', 2.5)">🥤 Coca (2.5€)</button>
+        <button class="btn-item" onclick="addExtra('Eau', 1.5)">💧 Eau (1.5€)</button>
+        <button class="btn-item" onclick="addExtra('Tiramisu', 4)">🍰 Dessert (4€)</button>
+        <button class="btn-item" style="color:#ef4444" onclick="resetExtras()">❌ Effacer Supps</button>
+    </div>
+
+    <div class="order-zone">
+        <input type="text" id="nom" placeholder="Nom Client">
+        <input type="tel" id="tel" placeholder="Téléphone">
+        <input type="text" id="adresse" placeholder="Adresse (si livraison)">
+        <div id="summary" style="font-size:13px; color:#fbbf24; margin:10px 0; font-weight:bold; text-align:center;">Choisissez une pizza...</div>
+        <button class="btn-send" onclick="envoyer()">ENVOYER COMMANDE 🚀</button>
     </div>
 
 <script>
     const socket = io();
-    let currentType = 'place';
-    let currentSize = 'Senior';
-    let extraPrice = 3;
-    let selectedPizza = null;
-    let basePrice = 0;
+    let sz = 'Senior', addP = 3, piz = '', baseP = 0, extras = [], extraP = 0;
 
-    function setSize(s, p) {
-        currentSize = s; extraPrice = p;
+    function setSize(s, p) { 
+        sz = s; addP = p; 
         document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('size-'+s).classList.add('active');
-        if(selectedPizza) updateDisplay();
+        document.getElementById('s-'+s).classList.add('active');
+        update();
     }
-
-    function selectPizza(name, price) {
-        selectedPizza = name; basePrice = price;
-        document.querySelectorAll('.pizza-btn').forEach(b => b.classList.remove('selected'));
-        document.getElementById('p-'+name).classList.add('selected');
-        updateDisplay();
+    function selectPiz(n, p) { 
+        piz = n; baseP = p; 
+        document.querySelectorAll('.pz').forEach(b => b.classList.remove('selected'));
+        document.getElementById('p-'+n).classList.add('selected');
+        update();
     }
+    function addExtra(n, p) { extras.push(n); extraP += p; update(); }
+    function resetExtras() { extras = []; extraP = 0; update(); }
 
-    function updateDisplay() {
-        let total = basePrice + extraPrice;
-        document.getElementById('p_display').value = selectedPizza + " (" + currentSize + ") • " + total + "€";
-    }
-
-    function setType(t) {
-        currentType = t;
-        document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('btn-'+t).classList.add('active');
-        document.getElementById('adresse').style.display = (t === 'livraison') ? 'block' : 'none';
+    function update() {
+        let total = baseP + addP + extraP;
+        let txt = piz ? `${piz} (${sz})` : '---';
+        if(extras.length > 0) txt += " + " + extras.join(', ');
+        document.getElementById('summary').innerHTML = txt + " <br> TOTAL : " + total.toFixed(2) + "€";
     }
 
     function envoyer() {
-        if(!selectedPizza) return alert("⚠️ Sélectionnez une pizza !");
-        if(!document.getElementById('nom').value) return alert("⚠️ Entrez le nom du client !");
-        
-        const data = {
-            id: Date.now(),
-            type: currentType,
-            nom: document.getElementById('nom').value,
-            tel: document.getElementById('tel').value || "Pas de numéro",
-            pizza: selectedPizza + " (" + currentSize + ")",
-            total: basePrice + extraPrice,
-            adresse: currentType === 'livraison' ? document.getElementById('adresse').value : 'N/A'
+        if(!piz) return alert("Pizza ?");
+        let data = {
+            id: Date.now(), nom: document.getElementById('nom').value || "Client",
+            tel: document.getElementById('tel').value || "N/A",
+            type: document.getElementById('adresse').value ? "LIVRAISON" : "SUR PLACE",
+            pizza: piz + " (" + sz + ") " + (extras.length > 0 ? "+ " + extras.join(', ') : ""),
+            total: (baseP + addP + extraP).toFixed(2),
+            adresse: document.getElementById('adresse').value || "N/A"
         };
-
         socket.emit('new_order', data);
-        alert("🚀 Envoyé !");
-        
-        // Reset partiel
-        selectedPizza = null;
-        document.getElementById('nom').value = "";
-        document.getElementById('tel').value = "";
-        document.getElementById('p_display').value = "";
-        document.querySelectorAll('.pizza-btn').forEach(b => b.classList.remove('selected'));
+        location.reload(); // Reset complet après envoi
     }
 </script>
 </body>
