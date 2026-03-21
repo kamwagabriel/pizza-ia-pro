@@ -3,57 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🍕 CAISSE ALLO PIZZA</title>
+    <title>🍕 CAISSE PRO - TAILLES</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #111827; color: white; margin: 0; padding: 10px; }
-        .header { background: #d32f2f; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 15px; }
-        .tabs { display: flex; gap: 8px; margin-bottom: 15px; }
-        .tab { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; }
-        .card { background: #1f2937; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #374151; }
-        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #374151; background: #111827; color: white; font-size: 16px; box-sizing: border-box; }
-        .btn-send { background: #d32f2f; color: white; width: 100%; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 18px; margin-top: 5px; }
-        .success-msg { text-align: center; color: #22c55e; font-weight: bold; padding: 20px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #111827; color: white; margin: 0; padding: 10px; text-align: center; }
+        .header { background: #d32f2f; padding: 10px; border-radius: 10px; margin-bottom: 15px; }
+        
+        /* SELECTEUR DE TAILLE */
+        .size-selector { display: flex; gap: 5px; margin-bottom: 15px; }
+        .size-btn { flex: 1; padding: 12px; border: 2px solid #374151; background: #1f2937; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; }
+        .size-btn.active { border-color: #ef4444; background: #d32f2f; transform: scale(1.05); }
+
+        /* GRILLE PIZZAS */
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .pizza-btn { background: #1f2937; border: 2px solid #374151; color: white; padding: 15px; border-radius: 12px; cursor: pointer; }
+        .pizza-btn:active { transform: scale(0.95); }
+        .pizza-price { color: #22c55e; font-weight: bold; display: block; margin-top: 5px; }
+
+        .order-zone { background: #1f2937; padding: 15px; border-radius: 15px; border: 2px solid #d32f2f; }
+        .type-selector { display: flex; gap: 5px; margin-bottom: 10px; }
+        .type-btn { flex: 1; padding: 10px; border: none; border-radius: 6px; color: white; font-weight: bold; opacity: 0.3; }
+        .type-btn.active { opacity: 1; transform: scale(1.05); }
+        
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #374151; background: #111827; color: white; box-sizing: border-box; font-size: 16px; }
+        .btn-send { background: #d32f2f; color: white; width: 100%; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 18px; margin-top: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div class="header"><h2>🍕 CAISSE RAPIDE</h2></div>
-    <div class="tabs">
-        <button class="tab" style="background:#f39c12" onclick="add('place')">SUR PLACE</button>
-        <button class="tab" style="background:#22c55e" onclick="add('emporte')">EMPORTÉ</button>
-        <button class="tab" style="background:#3b82f6" onclick="add('livraison')">LIVRER</button>
+    <div class="header"><h3>🍕 CAISSE ALLO PIZZA</h3></div>
+
+    <p style="text-align:left; margin-bottom:5px; font-weight:bold; color:#94a3b8;">1. CHOISIR LA TAILLE :</p>
+    <div class="size-selector">
+        <button id="size-Junior" class="size-btn" onclick="setSize('Junior', 0)">JUNIOR</button>
+        <button id="size-Senior" class="size-btn active" onclick="setSize('Senior', 3)">SENIOR</button>
+        <button id="size-Mega" class="size-btn" onclick="setSize('Mega', 7)">MEGA</button>
     </div>
-    <div id="main"></div>
+
+    <p style="text-align:left; margin-bottom:5px; font-weight:bold; color:#94a3b8;">2. CHOISIR LA PIZZA :</p>
+    <div class="menu-grid">
+        <div class="pizza-btn" onclick="selectPizza('Marguerita', 8)">
+            <b>Marguerita</b><span class="pizza-price">Dès 8€</span>
+        </div>
+        <div class="pizza-btn" onclick="selectPizza('Reine', 10)">
+            <b>Reine</b><span class="pizza-price">Dès 10€</span>
+        </div>
+        <div class="pizza-btn" onclick="selectPizza('4 Fromages', 12)">
+            <b>4 Fromages</b><span class="pizza-price">Dès 12€</span>
+        </div>
+        <div class="pizza-btn" onclick="selectPizza('Calzone', 11)">
+            <b>Calzone</b><span class="pizza-price">Dès 11€</span>
+        </div>
+    </div>
+
+    <div class="order-zone">
+        <div class="type-selector">
+            <button id="btn-place" class="type-btn active" style="background:#f39c12" onclick="setType('place')">SUR PLACE</button>
+            <button id="btn-emporte" class="type-btn" style="background:#22c55e" onclick="setType('emporte')">EMPORTÉ</button>
+            <button id="btn-livraison" class="type-btn" style="background:#3b82f6" onclick="setType('livraison')">LIVRER</button>
+        </div>
+        
+        <input type="text" id="nom" placeholder="Nom Client / N° Table">
+        <input type="text" id="p_display" placeholder="Pizza, Taille et Prix..." readonly style="color:#fbbf24; font-weight:bold;">
+        <input type="text" id="adresse" placeholder="Adresse de livraison..." style="display:none;">
+        
+        <input type="hidden" id="p_val">
+        <input type="hidden" id="t_val">
+        
+        <button class="btn-send" onclick="envoyer()">ENVOYER EN CUISINE 🚀</button>
+    </div>
 
 <script>
     const socket = io();
-    function add(type) {
-        const id = Date.now();
-        const html = `
-            <div class="card" id="c-${id}">
-                <h3 style="margin:0; color:${type==='place'?'#f39c12':type==='emporte'?'#22c55e':'#3b82f6'}">${type.toUpperCase()}</h3>
-                <input type="text" id="n-${id}" placeholder="Nom ou Table">
-                <textarea id="p-${id}" placeholder="Pizzas..." rows="2"></textarea>
-                <input type="text" id="e-${id}" placeholder="Boissons/Desserts">
-                <input type="number" id="t-${id}" placeholder="Prix Total (€)">
-                ${type==='livraison' ? `<input type="text" id="a-${id}" placeholder="Adresse complète">` : ''}
-                <button class="btn-send" onclick="send('${id}','${type}')">ENVOYER EN CUISINE 🚀</button>
-            </div>`;
-        document.getElementById('main').insertAdjacentHTML('afterbegin', html);
+    let currentType = 'place';
+    let currentSize = 'Senior';
+    let extraPrice = 3; 
+
+    function setSize(s, priceAdd) {
+        currentSize = s;
+        extraPrice = priceAdd;
+        document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('size-'+s).classList.add('active');
+        // On ne reset pas la pizza, on met à jour le prix si une pizza était déjà sélectionnée
+        const currentPizzaName = document.getElementById('p_val').value.split(' ')[0];
+        if(currentPizzaName) {
+             // On peut simuler un clic pour recalculer
+        }
     }
-    function send(id, type) {
+
+    function setType(t) {
+        currentType = t;
+        document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('btn-'+t).classList.add('active');
+        document.getElementById('adresse').style.display = (t === 'livraison') ? 'block' : 'none';
+    }
+
+    function selectPizza(name, basePrice) {
+        let finalPrice = basePrice + extraPrice;
+        document.getElementById('p_display').value = `${name} [${currentSize.toUpperCase()}] - ${finalPrice}€`;
+        document.getElementById('p_val').value = `${name} (${currentSize})`;
+        document.getElementById('t_val').value = finalPrice;
+    }
+
+    function envoyer() {
+        const nom = document.getElementById('nom').value || "Client";
+        const pizza = document.getElementById('p_val').value;
+        const total = document.getElementById('t_val').value;
+
+        if(!pizza) return alert("⚠️ Choisis d'abord une pizza !");
+
         const data = {
-            id: id, type: type,
-            nom: document.getElementById(`n-${id}`).value,
-            pizza: document.getElementById(`p-${id}`).value,
-            extra: document.getElementById(`e-${id}`).value,
-            total: document.getElementById(`t-${id}`).value || "0",
-            adresse: type==='livraison' ? document.getElementById(`a-${id}`).value : 'N/A'
-        };
-        socket.emit('new_order', data);
-        document.getElementById(`c-${id}`).innerHTML = "<div class='success-msg'>✅ COMMANDE ENVOYÉE !</div>";
-        setTimeout(() => document.getElementById(`c-${id}`).remove(), 1000);
-    }
-</script>
-</body>
-</html>
+            id: Date.now(),
+            type: currentType,
+            nom: nom,
+            pizza
