@@ -2,95 +2,110 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>🍕 ALLO PIZZA PRO - CONSOLE</title>
+    <title>🍕 CONSOLE CUISINE - PRO</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --success: #22c55e; --danger: #ef4444; --warning: #fbbf24; --text: #f8fafc; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; overflow-x: hidden; }
-        header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 2px solid var(--card); margin-bottom: 20px; }
-        .main-layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
-        .card { background: var(--card); border-radius: 15px; padding: 20px; border-left: 6px solid var(--accent); position: relative; transition: 0.3s; animation: pop 0.3s ease-out; margin-bottom: 15px; }
-        @keyframes pop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .urgent { border-left-color: var(--danger); animation: blink 1.5s infinite; }
-        @keyframes blink { 50% { box-shadow: 0 0 20px var(--danger); } }
-        .price-tag { position: absolute; top: 15px; right: 15px; background: var(--success); padding: 5px 12px; border-radius: 8px; font-weight: 800; font-size: 1.2rem; }
-        .btn { border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
-        .btn-cook { background: var(--warning); color: #000; }
-        .btn-done { background: var(--success); }
-        .btn-excel { background: #1d6f42; width: 100%; margin-top: 15px; display: block; text-decoration: none; text-align: center; color: white; padding: 12px; border-radius: 8px; font-weight: bold; }
-        .p-list { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin: 15px 0; border: 1px dashed #475569; font-size: 1.1rem; }
-        .maps-btn { display: block; background: #4285F4; color: white; text-decoration: none; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 10px; font-weight: bold; }
-        .sidebar { background: var(--card); padding: 20px; border-radius: 15px; position: sticky; top: 20px; height: fit-content; }
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #3b82f6; --success: #22c55e; --warning: #fbbf24; --danger: #ef4444; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; padding: 20px; margin: 0; }
+        
+        .top-bar { display: flex; justify-content: space-between; align-items: center; background: var(--card); padding: 15px 25px; border-radius: 15px; margin-bottom: 25px; border: 1px solid #334155; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+        
+        /* CARTE CLIGNOTANTE */
+        .card { 
+            background: var(--card); border-radius: 20px; padding: 20px; border: 4px solid var(--danger); 
+            position: relative; animation: flash 1.5s infinite; transition: 0.3s;
+        }
+        @keyframes flash { 
+            0% { border-color: var(--danger); box-shadow: 0 0 10px var(--danger); }
+            50% { border-color: var(--accent); box-shadow: 0 0 20px var(--accent); }
+            100% { border-color: var(--danger); box-shadow: 0 0 10px var(--danger); }
+        }
+
+        .order-id { background: white; color: black; padding: 4px 12px; border-radius: 8px; font-weight: 900; font-size: 22px; margin-bottom: 10px; display: inline-block; }
+        .price-badge { position: absolute; top: 20px; right: 20px; background: var(--success); color: white; padding: 8px 15px; border-radius: 10px; font-size: 20px; font-weight: bold; }
+        
+        .client-name { font-size: 24px; margin: 10px 0; color: #f8fafc; }
+        .client-tel { color: var(--warning); font-size: 19px; font-weight: bold; display: block; margin-bottom: 15px; }
+        
+        .pizza-detail { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border-left: 6px solid var(--warning); font-size: 22px; font-weight: bold; }
+        
+        .address { margin-top: 15px; color: #94a3b8; font-style: italic; display: flex; align-items: center; gap: 5px; }
+        
+        .btn-ready { background: var(--success); color: white; border: none; padding: 18px; width: 100%; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 18px; margin-top: 20px; transition: 0.2s; }
+        .btn-ready:hover { transform: scale(1.02); filter: brightness(1.1); }
+
+        .stats-box { margin-top: 40px; background: var(--card); padding: 20px; border-radius: 15px; border: 1px solid #334155; }
     </style>
 </head>
 <body>
-    <header>
-        <h1 style="margin:0;">🍕 ALLO PIZZA <span style="color:var(--accent)">PRO</span></h1>
-        <div id="clock" style="font-size: 24px; font-weight: bold; color: var(--accent);">00:00:00</div>
-    </header>
 
-    <div class="main-layout">
-        <div id="orders-container"></div>
-        <div class="sidebar">
-            <canvas id="salesChart"></canvas>
-            <h3 style="margin-top:20px; color:var(--warning)">Bilan du jour</h3>
-            <div id="total-money" style="font-size: 30px; font-weight: 800; color: var(--success);">0.00 €</div>
-            <a href="/download_excel" class="btn-excel">📥 TÉLÉCHARGER L'EXCEL</a>
-            <hr style="border: 0; border-top: 1px solid #334155; margin: 20px 0;">
-            <div id="history" style="font-size: 13px; max-height: 200px; overflow-y: auto;"></div>
+    <div class="top-bar">
+        <h1 style="margin:0;">👨‍🍳 CUISINE • <span id="time-now" style="color:var(--accent)">00:00</span></h1>
+        <div style="display:flex; gap:15px;">
+            <div style="text-align:right;">
+                <div style="font-size:12px; opacity:0.6;">RECETTE DU JOUR</div>
+                <div id="total-ca" style="font-size:24px; font-weight:bold; color:var(--success);">0.00€</div>
+            </div>
+            <a href="/download_excel" style="background:var(--success); color:white; padding:10px 15px; border-radius:10px; text-decoration:none; font-weight:bold; align-self:center;">📥 EXCEL</a>
         </div>
     </div>
 
-    <audio id="bell" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"></audio>
+    <div id="orders-container" class="grid"></div>
+
+    <div class="stats-box">
+        <h3 style="margin-top:0;">📊 Historique Session</h3>
+        <div id="history-log" style="font-family:monospace; font-size:13px; opacity:0.7;"></div>
+    </div>
+
+    <audio id="sound" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"></audio>
 
 <script>
     const socket = io();
-    let dailyTotal = 0;
-    let stats = { livraison: 0, emporte: 0, place: 0 };
+    let revenue = 0;
 
-    setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
-
-    const salesChart = new Chart(document.getElementById('salesChart'), {
-        type: 'doughnut',
-        data: { labels: ['Livraison', 'Emporté', 'Sur Place'], datasets: [{ data: [0, 0, 0], backgroundColor: ['#3b82f6', '#22c55e', '#fbbf24'] }] },
-        options: { plugins: { legend: { labels: { color: 'white' } } } }
-    });
+    // Horloge temps réel
+    setInterval(() => {
+        document.getElementById('time-now').innerText = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+    }, 1000);
 
     socket.on('new_order', (data) => {
+        const container = document.getElementById('orders-container');
         const card = document.createElement('div');
         card.className = 'card';
         card.id = `card-${data.id}`;
         
-        let mapsHtml = (data.type === 'livraison' && data.adresse !== 'N/A') ? `<a href="https://www.google.com/maps/search/${encodeURIComponent(data.adresse)}" target="_blank" class="maps-btn">📍 ITINÉRAIRE GOOGLE MAPS</a>` : '';
-
         card.innerHTML = `
-            <div class="price-tag">${data.total} €</div>
-            <div style="font-weight:bold; color:var(--warning); text-transform:uppercase; font-size:12px;">${data.type}</div>
-            <h2 style="margin:5px 0;">👤 ${data.nom}</h2>
-            <div class="p-list">🍕 ${data.pizza}<br><small style="color:#94a3b8">🥤 ${data.extra || 'Aucun'}</small></div>
-            ${mapsHtml}
-            <div style="display:flex; gap:10px;">
-                <button class="btn btn-cook" onclick="setCook('${data.id}')">👨‍🍳 CUISINE</button>
-                <button class="btn btn-done" onclick="finish('${data.id}','${data.type}','${data.total}','${data.nom}','${data.pizza}')">✅ PRÊT</button>
-            </div>
+            <div class="price-badge">${data.total}€</div>
+            <div class="order-id">#${data.order_num}</div>
+            <div style="font-size:12px; color:var(--accent); font-weight:bold;">🕒 REÇUE À ${data.time} • ${data.type.toUpperCase()}</div>
+            <h2 class="client-name">👤 ${data.nom}</h2>
+            <span class="client-tel">📞 ${data.tel}</span>
+            <div class="pizza-detail">🍕 ${data.pizza}</div>
+            ${data.adresse !== 'N/A' ? `<div class="address">📍 ${data.adresse}</div>` : ''}
+            <button class="btn-ready" onclick="complete('${data.id}', ${data.total}, '${data.nom}', '${data.pizza}', '${data.order_num}', '${data.type}', '${data.tel}')">MARQUER COMME PRÊT ✅</button>
         `;
-        document.getElementById('orders-container').prepend(card);
-        document.getElementById('bell').play();
-        setTimeout(() => card.classList.add('urgent'), 600000); // Devient urgent après 10 min
+        
+        container.prepend(card);
+        document.getElementById('sound').play();
     });
 
-    function setCook(id) { document.getElementById(`card-${id}`).style.borderLeftColor = "#fbbf24"; }
-
-    function finish(id, type, total, nom, pizza) {
-        socket.emit('finish_order_excel', {nom, type, total, pizza});
-        dailyTotal += parseFloat(total);
-        document.getElementById('total-money').innerText = dailyTotal.toFixed(2) + " €";
-        stats[type]++;
-        salesChart.data.datasets[0].data = [stats.livraison, stats.emporte, stats.place];
-        salesChart.update();
-        document.getElementById('history').innerHTML = `<div><b>${new Date().toLocaleTimeString()}</b> - ${nom} (${total}€)</div>` + document.getElementById('history').innerHTML;
-        document.getElementById(`card-${id}`).remove();
+    function complete(id, price, nom, pizza, num, type, tel) {
+        // Envoi au serveur pour Excel
+        socket.emit('finish_order_excel', {order_num: num, nom: nom, total: price, pizza: pizza, type: type, tel: tel});
+        
+        // Update Revenue
+        revenue += parseFloat(price);
+        document.getElementById('total-ca').innerText = revenue.toFixed(2) + "€";
+        
+        // Log historique
+        const log = document.getElementById('history-log');
+        log.innerHTML = `[${new Date().toLocaleTimeString()}] Commande #${num} (${nom}) terminée. <br>` + log.innerHTML;
+        
+        // Remove Card
+        document.getElementById(`card-${id}`).style.transform = "scale(0)";
+        setTimeout(() => document.getElementById(`card-${id}`).remove(), 300);
     }
 </script>
 </body>
