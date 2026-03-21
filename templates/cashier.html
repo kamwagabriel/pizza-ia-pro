@@ -3,72 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🍕 CAISSE - ALLO PIZZA PRO</title>
+    <title>🍕 CAISSE ALLO PIZZA</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 15px; text-align: center; }
-        .header { background: #d32f2f; color: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
-        .btn-group { display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; }
-        .btn { padding: 15px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; color: white; min-width: 110px; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .btn-place { background: #f39c12; }
-        .btn-emporte { background: #27ae60; }
-        .btn-livraison { background: #2c3e50; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
-        .card { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: left; border-top: 5px solid #d32f2f; }
-        input, textarea { width: 100%; margin: 5px 0 10px 0; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
-        .btn-send { background: #d32f2f; color: white; width: 100%; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #111827; color: white; margin: 0; padding: 10px; }
+        .header { background: #d32f2f; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 15px; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 15px; }
+        .tab { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; }
+        .card { background: #1f2937; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #374151; }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #374151; background: #111827; color: white; font-size: 16px; box-sizing: border-box; }
+        .btn-send { background: #d32f2f; color: white; width: 100%; border: none; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 18px; margin-top: 5px; }
+        .success-msg { text-align: center; color: #22c55e; font-weight: bold; padding: 20px; }
     </style>
 </head>
 <body>
-
-<div class="header"><h1>🍕 CAISSE ALLO PIZZA</h1></div>
-
-<div class="btn-group">
-    <button class="btn btn-place" onclick="ajouter('place')">🍽️ SUR PLACE</button>
-    <button class="btn btn-emporte" onclick="ajouter('emporte')">🛍️ EMPORTÉ</button>
-    <button class="btn btn-livraison" onclick="ajouter('livraison')">🚚 LIVRAISON</button>
-</div>
-
-<div id="grid" class="grid"></div>
+    <div class="header"><h2>🍕 CAISSE RAPIDE</h2></div>
+    <div class="tabs">
+        <button class="tab" style="background:#f39c12" onclick="add('place')">SUR PLACE</button>
+        <button class="tab" style="background:#22c55e" onclick="add('emporte')">EMPORTÉ</button>
+        <button class="tab" style="background:#3b82f6" onclick="add('livraison')">LIVRER</button>
+    </div>
+    <div id="main"></div>
 
 <script>
     const socket = io();
-    function ajouter(type) {
+    function add(type) {
         const id = Date.now();
-        const grid = document.getElementById('grid');
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.id = `c-${id}`;
-        
-        const labels = {'place': '🍽️ SUR PLACE', 'emporte': '🛍️ EMPORTÉ', 'livraison': '🚚 LIVRAISON'};
-        
-        let html = `<h3 style="margin-top:0; color:#333;">${labels[type]}</h3>
-            <input type="text" id="n-${id}" placeholder="${type === 'place' ? 'N° Table' : 'Nom Client'}">
-            <textarea id="p-${id}" rows="2" placeholder="Pizzas (ex: 1 Royale, 2 Marguerites)"></textarea>
-            <input type="text" id="e-${id}" placeholder="Boissons & Desserts...">`;
-        
-        if(type === 'livraison') {
-            html += `<input type="text" id="a-${id}" placeholder="Adresse complète...">`;
-        }
-        
-        html += `<button class="btn-send" onclick="envoyer('${id}','${type}')">ENVOYER EN CUISINE 🚀</button>`;
-        card.innerHTML = html;
-        grid.prepend(card);
+        const html = `
+            <div class="card" id="c-${id}">
+                <h3 style="margin:0; color:${type==='place'?'#f39c12':type==='emporte'?'#22c55e':'#3b82f6'}">${type.toUpperCase()}</h3>
+                <input type="text" id="n-${id}" placeholder="Nom ou Table">
+                <textarea id="p-${id}" placeholder="Pizzas..." rows="2"></textarea>
+                <input type="text" id="e-${id}" placeholder="Boissons/Desserts">
+                <input type="number" id="t-${id}" placeholder="Prix Total (€)">
+                ${type==='livraison' ? `<input type="text" id="a-${id}" placeholder="Adresse complète">` : ''}
+                <button class="btn-send" onclick="send('${id}','${type}')">ENVOYER EN CUISINE 🚀</button>
+            </div>`;
+        document.getElementById('main').insertAdjacentHTML('afterbegin', html);
     }
-
-    function envoyer(id, type) {
+    function send(id, type) {
         const data = {
-            id: id,
-            type: type,
-            nom: document.getElementById(`n-${id}`).value || "Inconnu",
-            pizza: document.getElementById(`p-${id}`).value || "Aucune pizza",
-            extra: document.getElementById(`e-${id}`).value || "Rien",
-            adresse: type === 'livraison' ? document.getElementById(`a-${id}`).value : 'N/A'
+            id: id, type: type,
+            nom: document.getElementById(`n-${id}`).value,
+            pizza: document.getElementById(`p-${id}`).value,
+            extra: document.getElementById(`e-${id}`).value,
+            total: document.getElementById(`t-${id}`).value || "0",
+            adresse: type==='livraison' ? document.getElementById(`a-${id}`).value : 'N/A'
         };
         socket.emit('new_order', data);
-        const card = document.getElementById(`c-${id}`);
-        card.innerHTML = "<div style='text-align:center; padding:20px;'><h2 style='color:#27ae60;'>✅ ENVOYÉ !</h2><p>Commande transmise à la cuisine</p></div>";
-        setTimeout(() => card.remove(), 2000);
+        document.getElementById(`c-${id}`).innerHTML = "<div class='success-msg'>✅ COMMANDE ENVOYÉE !</div>";
+        setTimeout(() => document.getElementById(`c-${id}`).remove(), 1000);
     }
 </script>
 </body>
