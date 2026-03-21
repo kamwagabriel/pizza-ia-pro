@@ -7,10 +7,10 @@ from flask_socketio import SocketIO, emit
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'pizza_sarcelles_95'
 
-# Utilisation du mode threading pour plus de stabilité sur Render
+# Configuration pour Render : on autorise toutes les origines pour le SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
-# Fichier journal des ventes
+# Nom du fichier Excel (Journal des ventes du jour)
 JOURNAL_FILE = f"JOURNAL_VENTES_{datetime.now().strftime('%d-%m-%Y')}.csv"
 
 def initialiser_fichier():
@@ -22,28 +22,29 @@ def initialiser_fichier():
 
 initialiser_fichier()
 
-# --- ROUTES ---
+# --- ROUTES (LES PAGES) ---
 
-# 1. La Console de Contrôle (Le tableau de bord sombre)
+# 1. La Console de Contrôle (Le tableau de bord bleu nuit pour le patron)
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# 2. La Caisse (Tes 3 boutons Orange/Vert/Bleu)
+# 2. La Caisse (Ta télécommande avec les boutons Orange/Vert/Bleu)
 @app.route('/cashier')
 def cashier():
     return render_template('cashier.html')
 
-# --- GESTION DES COMMANDES ---
+# --- GESTION DES COMMANDES (COMMUNICATION) ---
 
 @socketio.on('new_order')
 def handle_new_order(data):
-    # On renvoie la commande à tout le monde (pour qu'elle apparaisse sur la console)
+    # On renvoie la commande à TOUT LE MONDE (pour qu'elle apparaisse sur la console)
     emit('new_order', data, broadcast=True)
-    print(f"🍕 Nouvelle commande reçue : {data.get('nom')}")
+    print(f"🍕 Nouvelle commande reçue de : {data.get('nom')}")
 
 @socketio.on('delete_order')
 def handle_delete(data):
+    # Cette partie enregistre la vente dans le fichier Excel quand tu cliques sur "FINIR"
     try:
         with open(JOURNAL_FILE, mode='a', newline='', encoding='utf-8-sig') as f:
             writer = csv.writer(f, delimiter=';')
@@ -53,10 +54,13 @@ def handle_delete(data):
                 data.get('type', 'N/A').upper(),
                 f"{data.get('total', 0)} €"
             ])
-        print(f"💾 Archivé dans Excel")
+        print(f"💾 Vente archivée dans le journal Excel")
     except Exception as e:
-        print(f"❌ Erreur Excel : {e}")
+        print(f"❌ Erreur lors de l'écriture Excel : {e}")
+
+# --- LANCEMENT DU SERVEUR ---
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    socketio.run(app, host='0.0.0.0', port=port)
+    # Le paramètre allow_unsafe_werkzeug=True corrige l'erreur rouge sur Render
+    socketio.run(app, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
