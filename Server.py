@@ -5,13 +5,12 @@ from flask import Flask, render_template, send_file
 from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'pizza_ultra_pro_2026'
+app.config['SECRET_KEY'] = 'pizza_ia_pro_2026'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 order_counter = 0
 
 def get_csv_name():
-    # Crée un fichier par jour : BILAN_PIZZA_26-03-2026.csv
     return f"BILAN_PIZZA_{datetime.now().strftime('%d-%m-%Y')}.csv"
 
 @app.route('/')
@@ -27,13 +26,12 @@ def download_excel():
     filename = get_csv_name()
     if os.path.exists(filename):
         return send_file(filename, as_attachment=True)
-    return "Aucun bilan pour aujourd'hui.", 404
+    return "Aucun bilan.", 404
 
 @socketio.on('new_order')
 def handle_new_order(data):
     global order_counter
     order_counter += 1
-    # Génère le numéro #001, #002...
     data['order_num'] = f"{order_counter:03d}"
     data['time'] = datetime.now().strftime("%H:%M")
     emit('new_order', data, broadcast=True)
@@ -46,7 +44,7 @@ def handle_finish_excel(data):
         with open(filename, mode='a', newline='', encoding='utf-8-sig') as f:
             writer = csv.writer(f, delimiter=';')
             if not file_exists:
-                writer.writerow(['HEURE', 'N° CMD', 'CLIENT', 'TEL', 'TYPE', 'COMMANDE', 'TOTAL (€)'])
+                writer.writerow(['HEURE', 'N°', 'CLIENT', 'TEL', 'TYPE', 'COMMANDE', 'TOTAL'])
             writer.writerow([
                 datetime.now().strftime("%H:%M"),
                 data.get('order_num'),
@@ -60,6 +58,5 @@ def handle_finish_excel(data):
         print(f"Erreur Excel: {e}")
 
 if __name__ == '__main__':
-    # Utilise le port 5000 par défaut ou celui de l'hébergeur
     port = int(os.environ.get("PORT", 5000))
     socketio.run(app, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
