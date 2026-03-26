@@ -3,20 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🍕 CAISSE RAPIDE</title>
+    <title>🍕 CAISSE PIZZA IA</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
         body { font-family: sans-serif; background: #0f172a; color: white; padding: 10px; text-align: center; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
-        .btn { background: #1e293b; border: 2px solid #334155; color: white; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .btn { background: #1e293b; border: 2px solid #334155; color: white; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; }
         .btn.active { border-color: #3b82f6; background: #1e3a8a; }
         .btn-send { background: #22c55e; color: white; width: 100%; border: none; padding: 20px; border-radius: 12px; font-weight: bold; font-size: 20px; cursor: pointer; margin-top: 15px; }
-        .type-btn { padding: 12px; border-radius: 8px; border: none; color: white; font-weight: bold; opacity: 0.4; }
-        .type-btn.active { opacity: 1; border: 2px solid white; transform: scale(1.05); }
+        .type-grid { display: flex; gap: 5px; margin-bottom: 15px; }
+        .type-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; color: white; font-weight: bold; opacity: 0.4; cursor: pointer; }
+        .type-btn.active { opacity: 1; transform: scale(1.05); border: 2px solid white; }
     </style>
 </head>
 <body>
-    <h2 style="background:#ef4444; padding:10px; border-radius:10px;">🍕 CAISSE ALLO PIZZA</h2>
+    <h2 style="background:#ef4444; padding:10px; border-radius:10px;">🍕 CAISSE RAPIDE</h2>
 
     <div class="grid" style="grid-template-columns: 1fr 1fr 1fr;">
         <button id="s-Junior" class="btn" onclick="setS('Junior', 0)">JUNIOR</button>
@@ -25,22 +26,23 @@
     </div>
 
     <div class="grid">
-        <button class="btn pz" id="p-Marguerita" onclick="setP('Marguerita', 8)">🧀 Marguerita</button>
-        <button class="btn pz" id="p-Reine" onclick="setP('Reine', 10)">🍄 Reine</button>
-        <button class="btn pz" id="p-4Fromages" onclick="setP('4 Fromages', 12)">🧀 4 Fromages</button>
-        <button class="btn pz" id="p-Calzone" onclick="setP('Calzone', 11)">🥟 Calzone</button>
+        <button class="btn pz" id="p-Marguerita" onclick="setP('Marguerita', 8)">Marguerita</button>
+        <button class="btn pz" id="p-Reine" onclick="setP('Reine', 10)">Reine</button>
+        <button class="btn pz" id="p-4Fromages" onclick="setP('4 Fromages', 12)">4 Fromages</button>
+        <button class="btn pz" id="p-Calzone" onclick="setP('Calzone', 11)">Calzone</button>
     </div>
 
-    <div style="display:flex; gap:5px; margin:15px 0;">
-        <button id="m-place" class="type-btn active" style="flex:1; background:#f39c12" onclick="setM('SUR PLACE','Table 5','N/A')">SUR PLACE</button>
-        <button id="m-livre" class="type-btn" style="flex:1; background:#3b82f6" onclick="setM('LIVRAISON','M. Durand','12 Rue de la Paix, Paris')">LIVRER</button>
+    <div class="type-grid">
+        <button id="m-place" class="type-btn active" style="background:#f39c12" onclick="setM('SUR PLACE','Table 5','N/A')">🏠 SUR PLACE</button>
+        <button id="m-emporte" class="type-btn" style="background:#22c55e" onclick="setM('EMPORTE','M. Martin','N/A')">🛍️ EMPORTÉ</button>
+        <button id="m-livre" class="type-btn" style="background:#3b82f6" onclick="setM('LIVRAISON','M. Durand','12 Rue de la Paix')">🚀 LIVRER</button>
     </div>
 
     <div style="background:#1e293b; padding:15px; border-radius:10px; border:1px dashed #475569;">
-        <div id="out" style="font-size:18px; color:#fbbf24; font-weight:bold;">Prêt à commander...</div>
+        <div id="out" style="font-size:16px; color:#fbbf24; font-weight:bold;">Prêt...</div>
     </div>
 
-    <button class="btn-send" onclick="send()">ENVOYER EN CUISINE 🚀</button>
+    <button class="btn-send" onclick="send()">ENVOYER 🚀</button>
 
 <script>
     const socket = io();
@@ -55,10 +57,8 @@
         document.getElementById('out').innerText = piz ? `${piz} (${sz}) : ${total}€` : "Choisissez une pizza";
         document.querySelectorAll('.btn').forEach(b=>b.classList.remove('active'));
         document.getElementById('s-'+sz).classList.add('active');
-        document.querySelectorAll('.pz').forEach(b=>b.classList.remove('selected'));
-        if(piz) document.getElementById('p-'+piz.replace(' ','')).style.borderColor="#22c55e";
         document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
-        document.getElementById(mode==='SUR PLACE'?'m-place':'m-livre').classList.add('active');
+        document.getElementById(mode==='SUR PLACE'?'m-place':mode==='EMPORTE'?'m-emporte':'m-livre').classList.add('active');
     }
 
     function send(){
@@ -67,7 +67,7 @@
             id:Date.now(), type:mode, nom:nom, tel:"0612345678",
             pizza:piz+" ("+sz+")", total:(baseP+addP).toFixed(2), adresse:adr
         });
-        alert("Envoyé !"); location.reload();
+        location.reload();
     }
 </script>
 </body>
