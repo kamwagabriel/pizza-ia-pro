@@ -3,93 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🍕 CAISSE AUTO-DEMO</title>
+    <title>🍕 CAISSE RAPIDE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; margin: 0; padding: 10px; text-align: center; }
-        .header { background: #ef4444; padding: 10px; border-radius: 12px; margin-bottom: 10px; font-weight: bold; }
-        .section-title { font-size: 11px; color: #94a3b8; text-transform: uppercase; margin: 15px 0 5px; text-align: left; padding-left: 5px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .btn { background: #1e293b; border: 2px solid #334155; color: white; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        body { font-family: sans-serif; background: #0f172a; color: white; padding: 10px; text-align: center; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+        .btn { background: #1e293b; border: 2px solid #334155; color: white; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; }
         .btn.active { border-color: #3b82f6; background: #1e3a8a; }
-        .btn-pizza.selected { border-color: #22c55e; background: #064e3b; }
-        .type-grid { display: flex; gap: 5px; margin-bottom: 15px; }
-        .type-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; color: white; font-weight: bold; opacity: 0.4; cursor: pointer; }
-        .type-btn.active { opacity: 1; transform: scale(1.05); border: 2px solid white; }
-        .summary-box { background: #1e293b; padding: 15px; border-radius: 15px; margin-top: 15px; border: 1px dashed #475569; }
-        .btn-send { background: #22c55e; color: white; width: 100%; border: none; padding: 20px; border-radius: 12px; font-weight: bold; font-size: 20px; margin-top: 15px; cursor: pointer; }
+        .btn-send { background: #22c55e; color: white; width: 100%; border: none; padding: 20px; border-radius: 12px; font-weight: bold; font-size: 20px; cursor: pointer; margin-top: 15px; }
+        .type-btn { padding: 12px; border-radius: 8px; border: none; color: white; font-weight: bold; opacity: 0.4; }
+        .type-btn.active { opacity: 1; border: 2px solid white; transform: scale(1.05); }
     </style>
 </head>
 <body>
-    <div class="header">🍕 CAISSE RAPIDE PRO</div>
+    <h2 style="background:#ef4444; padding:10px; border-radius:10px;">🍕 CAISSE ALLO PIZZA</h2>
 
-    <div class="section-title">1. Taille</div>
     <div class="grid" style="grid-template-columns: 1fr 1fr 1fr;">
-        <button id="s-Junior" class="btn" onclick="setSize('Junior', 0)">JUNIOR</button>
-        <button id="s-Senior" class="btn active" onclick="setSize('Senior', 3)">SENIOR</button>
-        <button id="s-Mega" class="btn" onclick="setSize('Mega', 7)">MEGA</button>
+        <button id="s-Junior" class="btn" onclick="setS('Junior', 0)">JUNIOR</button>
+        <button id="s-Senior" class="btn active" onclick="setS('Senior', 3)">SENIOR</button>
+        <button id="s-Mega" class="btn" onclick="setS('Mega', 7)">MEGA</button>
     </div>
 
-    <div class="section-title">2. Pizza</div>
     <div class="grid">
-        <button class="btn btn-pizza" id="p-Marguerita" onclick="selectPiz('Marguerita', 8)">Marguerita</button>
-        <button class="btn btn-pizza" id="p-Reine" onclick="selectPiz('Reine', 10)">Reine</button>
-        <button class="btn btn-pizza" id="p-4Fromages" onclick="selectPiz('4Fromages', 12)">4 Fromages</button>
-        <button class="btn btn-pizza" id="p-Calzone" onclick="selectPiz('Calzone', 11)">Calzone</button>
+        <button class="btn pz" id="p-Marguerita" onclick="setP('Marguerita', 8)">🧀 Marguerita</button>
+        <button class="btn pz" id="p-Reine" onclick="setP('Reine', 10)">🍄 Reine</button>
+        <button class="btn pz" id="p-4Fromages" onclick="setP('4 Fromages', 12)">🧀 4 Fromages</button>
+        <button class="btn pz" id="p-Calzone" onclick="setP('Calzone', 11)">🥟 Calzone</button>
     </div>
 
-    <div class="section-title">3. Suppléments</div>
-    <div class="grid">
-        <button class="btn" onclick="addExtra('Coca', 2.5)">🥤 Coca</button>
-        <button class="btn" onclick="addExtra('Tiramisu', 4)">🍰 Dessert</button>
+    <div style="display:flex; gap:5px; margin:15px 0;">
+        <button id="m-place" class="type-btn active" style="flex:1; background:#f39c12" onclick="setM('SUR PLACE','Table 5','N/A')">SUR PLACE</button>
+        <button id="m-livre" class="type-btn" style="flex:1; background:#3b82f6" onclick="setM('LIVRAISON','M. Durand','12 Rue de la Paix, Paris')">LIVRER</button>
     </div>
 
-    <div class="section-title">4. Mode</div>
-    <div class="type-grid">
-        <button id="m-place" class="type-btn active" style="background:#f39c12" onclick="setMode('SUR PLACE', 'Table 5', 'N/A')">SUR PLACE</button>
-        <button id="m-emporte" class="type-btn" style="background:#22c55e" onclick="setMode('EMPORTE', 'Client Comptoir', 'N/A')">EMPORTE</button>
-        <button id="m-livre" class="type-btn" style="background:#3b82f6" onclick="setMode('LIVRAISON', 'M. Durand', '12 Rue de la Paix, Paris')">LIVRER</button>
+    <div style="background:#1e293b; padding:15px; border-radius:10px; border:1px dashed #475569;">
+        <div id="out" style="font-size:18px; color:#fbbf24; font-weight:bold;">Prêt à commander...</div>
     </div>
 
-    <div class="summary-box">
-        <div id="display-cmd" style="font-size: 16px; color: #fbbf24; font-weight: bold;">Choisir une pizza...</div>
-        <div id="display-client" style="font-size: 13px; color: #94a3b8; margin-top: 5px;">Client: Table 5</div>
-    </div>
-
-    <button class="btn-send" onclick="envoyer()">ENVOYER 🚀</button>
+    <button class="btn-send" onclick="send()">ENVOYER EN CUISINE 🚀</button>
 
 <script>
     const socket = io();
-    let sz = 'Senior', addP = 3, piz = '', baseP = 0, mode = 'SUR PLACE', nom = 'Table 5', adr = 'N/A', extras = [], exP = 0;
+    let sz='Senior', addP=3, piz='', baseP=0, mode='SUR PLACE', nom='Table 5', adr='N/A';
 
-    function setSize(s, p) { sz = s; addP = p; update(); }
-    function selectPiz(n, p) { piz = n; baseP = p; update(); }
-    function addExtra(n, p) { extras.push(n); exP += p; update(); }
-    function setMode(m, n, a) { mode = m; nom = n; adr = a; update(); }
+    function setS(s,p){ sz=s; addP=p; update(); }
+    function setP(n,p){ piz=n; baseP=p; update(); }
+    function setM(m,n,a){ mode=m; nom=n; adr=a; update(); }
 
-    function update() {
-        let total = (baseP + addP + exP).toFixed(2);
-        document.getElementById('display-cmd').innerText = piz ? `${piz} (${sz}) + ${extras.join(', ')} : ${total}€` : "Choisir une pizza...";
-        document.getElementById('display-client').innerText = `Client: ${nom} | Mode: ${mode}`;
-        
-        document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+    function update(){
+        let total = (baseP + addP).toFixed(2);
+        document.getElementById('out').innerText = piz ? `${piz} (${sz}) : ${total}€` : "Choisissez une pizza";
+        document.querySelectorAll('.btn').forEach(b=>b.classList.remove('active'));
         document.getElementById('s-'+sz).classList.add('active');
-        document.querySelectorAll('.btn-pizza').forEach(b => b.classList.remove('selected'));
-        if(piz) document.getElementById('p-'+piz.replace(' ','')).classList.add('selected');
-        document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
-        if(mode==='SUR PLACE') document.getElementById('m-place').classList.add('active');
-        if(mode==='EMPORTE') document.getElementById('m-emporte').classList.add('active');
-        if(mode==='LIVRAISON') document.getElementById('m-livre').classList.add('active');
+        document.querySelectorAll('.pz').forEach(b=>b.classList.remove('selected'));
+        if(piz) document.getElementById('p-'+piz.replace(' ','')).style.borderColor="#22c55e";
+        document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
+        document.getElementById(mode==='SUR PLACE'?'m-place':'m-livre').classList.add('active');
     }
 
-    function envoyer() {
+    function send(){
         if(!piz) return alert("Pizza ?");
         socket.emit('new_order', {
-            id: Date.now(), type: mode, nom: nom, tel: "0612345678",
-            pizza: piz + " ("+sz+") " + extras.join(', '), 
-            total: (baseP + addP + exP).toFixed(2), adresse: adr
+            id:Date.now(), type:mode, nom:nom, tel:"0612345678",
+            pizza:piz+" ("+sz+")", total:(baseP+addP).toFixed(2), adresse:adr
         });
-        location.reload();
+        alert("Envoyé !"); location.reload();
     }
 </script>
 </body>
