@@ -3,101 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🍕 CAISSE PRO V3</title>
+    <title>🍕 CAISSE AUTO-DEMO</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; margin: 0; padding: 10px; }
-        .header { background: #ef4444; padding: 10px; border-radius: 12px; text-align: center; margin-bottom: 10px; }
-        .section-title { font-size: 11px; font-weight: bold; color: #94a3b8; text-transform: uppercase; margin: 15px 0 5px 5px; }
-        
-        /* Grilles Boutons */
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; margin: 0; padding: 10px; text-align: center; }
+        .header { background: #ef4444; padding: 10px; border-radius: 12px; margin-bottom: 10px; font-weight: bold; }
+        .section-title { font-size: 11px; color: #94a3b8; text-transform: uppercase; margin: 15px 0 5px; text-align: left; padding-left: 5px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .btn-item { background: #1e293b; border: 2px solid #334155; color: white; padding: 12px; border-radius: 10px; cursor: pointer; font-size: 14px; transition: 0.2s; }
-        .btn-item.active { border-color: #ef4444; background: #ef4444; }
-        .btn-item.selected { border-color: #22c55e; background: #064e3b; }
-
-        /* Tailles Junior/Senior/Mega */
-        .size-box { display: flex; gap: 5px; margin-bottom: 10px; }
-        .size-btn { flex: 1; padding: 10px; background: #1e293b; border: 2px solid #334155; color: white; border-radius: 8px; font-weight: bold; }
-        .size-btn.active { background: #3b82f6; border-color: #3b82f6; }
-
-        .order-zone { background: #1e293b; padding: 15px; border-radius: 15px; margin-top: 15px; border: 1px solid #334155; }
-        input { width: 100%; padding: 12px; margin: 5px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
-        .btn-send { background: #22c55e; color: white; width: 100%; border: none; padding: 18px; border-radius: 10px; font-weight: bold; font-size: 18px; margin-top: 10px; cursor: pointer; }
+        .btn { background: #1e293b; border: 2px solid #334155; color: white; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .btn.active { border-color: #3b82f6; background: #1e3a8a; }
+        .btn-pizza.selected { border-color: #22c55e; background: #064e3b; }
+        .type-grid { display: flex; gap: 5px; margin-bottom: 15px; }
+        .type-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; color: white; font-weight: bold; opacity: 0.4; cursor: pointer; }
+        .type-btn.active { opacity: 1; transform: scale(1.05); border: 2px solid white; }
+        .summary-box { background: #1e293b; padding: 15px; border-radius: 15px; margin-top: 15px; border: 1px dashed #475569; }
+        .btn-send { background: #22c55e; color: white; width: 100%; border: none; padding: 20px; border-radius: 12px; font-weight: bold; font-size: 20px; margin-top: 15px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div class="header"><h3>🍕 ALLO PIZZA CAISSE</h3></div>
+    <div class="header">🍕 CAISSE RAPIDE PRO</div>
 
     <div class="section-title">1. Taille</div>
-    <div class="size-box">
-        <button id="s-Junior" class="size-btn" onclick="setSize('Junior', 0)">JUNIOR</button>
-        <button id="s-Senior" class="size-btn active" onclick="setSize('Senior', 3)">SENIOR</button>
-        <button id="s-Mega" class="size-btn" onclick="setSize('Mega', 7)">MEGA</button>
+    <div class="grid" style="grid-template-columns: 1fr 1fr 1fr;">
+        <button id="s-Junior" class="btn" onclick="setSize('Junior', 0)">JUNIOR</button>
+        <button id="s-Senior" class="btn active" onclick="setSize('Senior', 3)">SENIOR</button>
+        <button id="s-Mega" class="btn" onclick="setSize('Mega', 7)">MEGA</button>
     </div>
 
-    <div class="section-title">2. Pizzas</div>
+    <div class="section-title">2. Pizza</div>
     <div class="grid">
-        <button class="btn-item pz" id="p-Marguerita" onclick="selectPiz('Marguerita', 8)">Marguerita</button>
-        <button class="btn-item pz" id="p-Reine" onclick="selectPiz('Reine', 10)">Reine</button>
-        <button class="btn-item pz" id="p-4Fromages" onclick="selectPiz('4Fromages', 12)">4 Fromages</button>
-        <button class="btn-item pz" id="p-Calzone" onclick="selectPiz('Calzone', 11)">Calzone</button>
+        <button class="btn btn-pizza" id="p-Marguerita" onclick="selectPiz('Marguerita', 8)">Marguerita</button>
+        <button class="btn btn-pizza" id="p-Reine" onclick="selectPiz('Reine', 10)">Reine</button>
+        <button class="btn btn-pizza" id="p-4Fromages" onclick="selectPiz('4Fromages', 12)">4 Fromages</button>
+        <button class="btn btn-pizza" id="p-Calzone" onclick="selectPiz('Calzone', 11)">Calzone</button>
     </div>
 
-    <div class="section-title">3. Boissons & Desserts</div>
+    <div class="section-title">3. Suppléments</div>
     <div class="grid">
-        <button class="btn-item" onclick="addExtra('Coca', 2.5)">🥤 Coca (2.5€)</button>
-        <button class="btn-item" onclick="addExtra('Eau', 1.5)">💧 Eau (1.5€)</button>
-        <button class="btn-item" onclick="addExtra('Tiramisu', 4)">🍰 Dessert (4€)</button>
-        <button class="btn-item" style="color:#ef4444" onclick="resetExtras()">❌ Effacer Supps</button>
+        <button class="btn" onclick="addExtra('Coca', 2.5)">🥤 Coca</button>
+        <button class="btn" onclick="addExtra('Tiramisu', 4)">🍰 Dessert</button>
     </div>
 
-    <div class="order-zone">
-        <input type="text" id="nom" placeholder="Nom Client">
-        <input type="tel" id="tel" placeholder="Téléphone">
-        <input type="text" id="adresse" placeholder="Adresse (si livraison)">
-        <div id="summary" style="font-size:13px; color:#fbbf24; margin:10px 0; font-weight:bold; text-align:center;">Choisissez une pizza...</div>
-        <button class="btn-send" onclick="envoyer()">ENVOYER COMMANDE 🚀</button>
+    <div class="section-title">4. Mode</div>
+    <div class="type-grid">
+        <button id="m-place" class="type-btn active" style="background:#f39c12" onclick="setMode('SUR PLACE', 'Table 5', 'N/A')">SUR PLACE</button>
+        <button id="m-emporte" class="type-btn" style="background:#22c55e" onclick="setMode('EMPORTE', 'Client Comptoir', 'N/A')">EMPORTE</button>
+        <button id="m-livre" class="type-btn" style="background:#3b82f6" onclick="setMode('LIVRAISON', 'M. Durand', '12 Rue de la Paix, Paris')">LIVRER</button>
     </div>
+
+    <div class="summary-box">
+        <div id="display-cmd" style="font-size: 16px; color: #fbbf24; font-weight: bold;">Choisir une pizza...</div>
+        <div id="display-client" style="font-size: 13px; color: #94a3b8; margin-top: 5px;">Client: Table 5</div>
+    </div>
+
+    <button class="btn-send" onclick="envoyer()">ENVOYER 🚀</button>
 
 <script>
     const socket = io();
-    let sz = 'Senior', addP = 3, piz = '', baseP = 0, extras = [], extraP = 0;
+    let sz = 'Senior', addP = 3, piz = '', baseP = 0, mode = 'SUR PLACE', nom = 'Table 5', adr = 'N/A', extras = [], exP = 0;
 
-    function setSize(s, p) { 
-        sz = s; addP = p; 
-        document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('s-'+s).classList.add('active');
-        update();
-    }
-    function selectPiz(n, p) { 
-        piz = n; baseP = p; 
-        document.querySelectorAll('.pz').forEach(b => b.classList.remove('selected'));
-        document.getElementById('p-'+n).classList.add('selected');
-        update();
-    }
-    function addExtra(n, p) { extras.push(n); extraP += p; update(); }
-    function resetExtras() { extras = []; extraP = 0; update(); }
+    function setSize(s, p) { sz = s; addP = p; update(); }
+    function selectPiz(n, p) { piz = n; baseP = p; update(); }
+    function addExtra(n, p) { extras.push(n); exP += p; update(); }
+    function setMode(m, n, a) { mode = m; nom = n; adr = a; update(); }
 
     function update() {
-        let total = baseP + addP + extraP;
-        let txt = piz ? `${piz} (${sz})` : '---';
-        if(extras.length > 0) txt += " + " + extras.join(', ');
-        document.getElementById('summary').innerHTML = txt + " <br> TOTAL : " + total.toFixed(2) + "€";
+        let total = (baseP + addP + exP).toFixed(2);
+        document.getElementById('display-cmd').innerText = piz ? `${piz} (${sz}) + ${extras.join(', ')} : ${total}€` : "Choisir une pizza...";
+        document.getElementById('display-client').innerText = `Client: ${nom} | Mode: ${mode}`;
+        
+        document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('s-'+sz).classList.add('active');
+        document.querySelectorAll('.btn-pizza').forEach(b => b.classList.remove('selected'));
+        if(piz) document.getElementById('p-'+piz.replace(' ','')).classList.add('selected');
+        document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+        if(mode==='SUR PLACE') document.getElementById('m-place').classList.add('active');
+        if(mode==='EMPORTE') document.getElementById('m-emporte').classList.add('active');
+        if(mode==='LIVRAISON') document.getElementById('m-livre').classList.add('active');
     }
 
     function envoyer() {
         if(!piz) return alert("Pizza ?");
-        let data = {
-            id: Date.now(), nom: document.getElementById('nom').value || "Client",
-            tel: document.getElementById('tel').value || "N/A",
-            type: document.getElementById('adresse').value ? "LIVRAISON" : "SUR PLACE",
-            pizza: piz + " (" + sz + ") " + (extras.length > 0 ? "+ " + extras.join(', ') : ""),
-            total: (baseP + addP + extraP).toFixed(2),
-            adresse: document.getElementById('adresse').value || "N/A"
-        };
-        socket.emit('new_order', data);
-        location.reload(); // Reset complet après envoi
+        socket.emit('new_order', {
+            id: Date.now(), type: mode, nom: nom, tel: "0612345678",
+            pizza: piz + " ("+sz+") " + extras.join(', '), 
+            total: (baseP + addP + exP).toFixed(2), adresse: adr
+        });
+        location.reload();
     }
 </script>
 </body>
