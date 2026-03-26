@@ -5,7 +5,7 @@ from flask import Flask, render_template, send_file
 from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'pizza_ia_pro_2026'
+app.config['SECRET_KEY'] = 'pizza_ia_pro_ultra'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 order_counter = 0
@@ -26,7 +26,7 @@ def download_excel():
     filename = get_csv_name()
     if os.path.exists(filename):
         return send_file(filename, as_attachment=True)
-    return "Aucun bilan.", 404
+    return "Aucun bilan disponible.", 404
 
 @socketio.on('new_order')
 def handle_new_order(data):
@@ -46,7 +46,7 @@ def handle_finish_excel(data):
             if not file_exists:
                 writer.writerow(['HEURE', 'N°', 'CLIENT', 'TEL', 'TYPE', 'COMMANDE', 'TOTAL'])
             writer.writerow([
-                datetime.now().strftime("%H:%M"),
+                data.get('time'),
                 data.get('order_num'),
                 data.get('nom'),
                 data.get('tel'),
