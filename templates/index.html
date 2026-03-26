@@ -2,30 +2,32 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>👨‍🍳 KDS PRO</title>
+    <title>👨‍🍳 KDS PRO - PIZZA IA</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
         :root { --bg: #0a0a0c; --card: #1a1a1d; --blue: #00a8ff; --orange: #f39c12; --red: #e84118; --green: #4cd137; }
         body { font-family: 'Courier New', monospace; background: var(--bg); color: white; margin: 0; padding: 10px; }
-        .header { display: flex; justify-content: space-between; background: #2f3640; padding: 10px 20px; border-bottom: 4px solid var(--blue); margin-bottom: 15px; }
+        .header { display: flex; justify-content: space-between; background: #2f3640; padding: 15px; border-bottom: 4px solid var(--blue); margin-bottom: 15px; align-items: center; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
-        .ticket { background: var(--card); border: 2px solid #353b48; display: flex; flex-direction: column; transition: 0.3s; }
-        .ticket-h { padding: 8px; background: #353b48; display: flex; justify-content: space-between; font-weight: bold; font-size: 20px; }
+        .ticket { background: var(--card); border: 2px solid #353b48; display: flex; flex-direction: column; position: relative; border-radius: 4px; }
+        .ticket-h { padding: 10px; background: #353b48; display: flex; justify-content: space-between; align-items: center; font-weight: bold; border-bottom: 1px solid #444; }
         .ticket-b { padding: 15px; flex-grow: 1; }
-        .items { font-size: 22px; font-weight: bold; color: #dcdde1; margin: 10px 0; }
+        .items { font-size: 20px; font-weight: bold; color: #eee; margin: 12px 0; border-left: 5px solid var(--orange); padding-left: 12px; }
         .urgent { border-color: var(--red) !important; animation: pulse-red 1.5s infinite; }
         .pret-anim { border-color: var(--green) !important; animation: pulse-green 1s infinite; }
-        @keyframes pulse-red { 0%, 100% { box-shadow:0 0 5px var(--red); } 50% { box-shadow:0 0 20px var(--red); } }
-        @keyframes pulse-green { 0%, 100% { box-shadow:0 0 5px var(--green); } 50% { box-shadow:0 0 20px var(--green); } }
-        .btn-step { border: none; padding: 15px; font-weight: bold; cursor: pointer; font-size: 18px; width: 100%; text-transform: uppercase; }
-        .map-btn { display: inline-block; background: #4285F4; color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; margin-top: 5px; }
+        @keyframes pulse-red { 0%, 100% { box-shadow:0 0 5px var(--red); } 50% { box-shadow:0 0 25px var(--red); } }
+        @keyframes pulse-green { 0%, 100% { box-shadow:0 0 5px var(--green); } 50% { box-shadow:0 0 25px var(--green); } }
+        .btn-step { border: none; padding: 18px; font-weight: bold; cursor: pointer; font-size: 18px; width: 100%; text-transform: uppercase; transition: 0.2s; }
+        .btn-cancel { background: transparent; border: 1px solid #ff4757; color: #ff4757; cursor: pointer; font-size: 10px; border-radius: 4px; padding: 4px 8px; font-weight: bold; }
+        .btn-cancel:hover { background: #ff4757; color: white; }
+        .map-box { margin-top: 10px; padding: 10px; background: #273142; border-radius: 6px; border: 1px solid #3b82f6; }
     </style>
 </head>
 <body>
     <div class="header">
-        <div>👨‍🍳 KDS PIZZA IA</div>
-        <div id="clock">00:00:00</div>
-        <div>TOTAL: <span id="rev" style="color:var(--green)">0.00€</span> | <a href="/download_excel" style="color:white; font-size:12px;">📊 BILAN</a></div>
+        <div style="font-size: 20px; font-weight: bold;">👨‍🍳 KDS PIZZA IA</div>
+        <div id="clock" style="font-size: 24px; color: var(--blue);">00:00:00</div>
+        <div style="font-weight: bold;">CA: <span id="rev" style="color:var(--green)">0.00€</span> | <a href="/download_excel" style="color:#bdc3c7; font-size:12px; text-decoration: none;">📊 EXPORT</a></div>
     </div>
     <div id="kds-grid" class="grid"></div>
     <audio id="notif" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"></audio>
@@ -34,54 +36,70 @@
     const socket = io(); let ca = 0;
     setInterval(() => { 
         document.getElementById('clock').innerText = new Date().toLocaleTimeString(); 
-        updTimers(); 
+        upd(); 
     }, 1000);
 
     socket.on('new_order', (data) => {
         const ticket = document.createElement('div');
         ticket.className = 'ticket'; ticket.id = `t-${data.id}`; ticket.dataset.start = Date.now();
         ticket.dataset.info = JSON.stringify(data);
+        const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.adresse)}`;
+
         ticket.innerHTML = `
-            <div class="ticket-h"><span style="color:var(--blue)">#${data.order_num}</span><span class="tm">0:00</span></div>
-            <div class="ticket-b">
-                <div style="color:var(--orange); font-weight:bold;">[${data.type}] ${data.nom}</div>
-                <div class="items">${data.pizza}</div>
-                ${data.adresse!=='N/A'?`<div style="font-size:12px;">📍 ${data.adresse} <br><a href="https://www.google.com/maps/search/${encodeURIComponent(data.adresse)}" target="_blank" class="map-btn">GPS</a></div>`:''}
+            <div class="ticket-h">
+                <span style="color:var(--blue); font-size:22px;">#${data.order_num}</span>
+                <button class="btn-cancel" onclick="annuler('${data.id}')">✖ ANNULER</button>
+                <span class="tm" style="font-size:16px;">0:00</span>
             </div>
-            <div id="actions-${data.id}"><button class="btn-step" style="background:var(--blue); color:white;" onclick="statusCuire('${data.id}')">CUIRE 🍕</button></div>
+            <div class="ticket-b">
+                <div style="color:var(--orange); font-weight:bold; font-size:17px; margin-bottom:5px;">[${data.type}] ${data.nom}</div>
+                <div class="items">${data.pizza}</div>
+                ${data.adresse!=='N/A'?`<div class="map-box"><div style="font-size:12px; color:#bdc3c7;">📍 ${data.adresse}</div><a href="${mapUrl}" target="_blank" style="display:inline-block; margin-top:8px; background:#4285F4; color:white; text-decoration:none; padding:8px 12px; border-radius:5px; font-size:11px; font-weight:bold; width: 90%; text-align: center;">OUVRIR GOOGLE MAPS</a></div>`:''}
+                <div style="font-size:12px; color:var(--blue); margin-top:12px; font-weight:bold;">📞 CLIENT: ${data.tel}</div>
+            </div>
+            <div id="actions-${data.id}"><button class="btn-step" style="background:var(--blue); color:white;" onclick="cui('${data.id}')">CUIRE 🍕</button></div>
         `;
         document.getElementById('kds-grid').prepend(ticket);
         document.getElementById('notif').play();
     });
 
-    function updTimers() {
+    function upd() {
         document.querySelectorAll('.ticket').forEach(t => {
-            if(t.classList.contains('is-finished')) return;
-            let diff = Math.floor((Date.now() - parseInt(t.dataset.start))/1000);
-            let m = Math.floor(diff/60), s = diff%60;
-            t.querySelector('.tm').innerText = `${m}:${s<10?'0':''}${s}`;
-            if(m >= 2 && !t.classList.contains('in-progress')) t.classList.add('urgent');
+            if(t.classList.contains('fin')) return;
+            let d = Math.floor((Date.now()-parseInt(t.dataset.start))/1000);
+            t.querySelector('.tm').innerText = `${Math.floor(d/60)}:${(d%60)<10?'0':''}${d%60}`;
+            if(d >= 120 && !t.classList.contains('work')) t.classList.add('urgent');
         });
     }
 
-    function statusCuire(id) {
+    function cui(id) {
         const t = document.getElementById(`t-${id}`);
-        t.classList.remove('urgent'); t.classList.add('in-progress'); t.style.borderColor = "var(--blue)";
-        document.getElementById(`actions-${id}`).innerHTML = `<button class="btn-step" style="background:var(--orange); color:black;" onclick="statusPret('${id}')">PRÊT ✅</button>`;
+        t.classList.remove('urgent'); t.classList.add('work'); t.style.borderColor = "var(--blue)";
+        document.getElementById(`actions-${id}`).innerHTML = `<button class="btn-step" style="background:var(--orange); color:black;" onclick="pre('${id}')">PRÊT ✅</button>`;
     }
 
-    function statusPret(id) {
+    function pre(id) {
         const t = document.getElementById(`t-${id}`);
-        t.classList.add('pret-anim'); t.classList.add('is-finished');
-        document.getElementById(`actions-${id}`).innerHTML = `<button class="btn-step" style="background:var(--green); color:black;" onclick="servir('${id}')">SERVIR ➔</button>`;
+        t.classList.add('pret-anim'); t.classList.add('fin');
+        document.getElementById(`actions-${id}`).innerHTML = `<button class="btn-step" style="background:var(--green); color:black;" onclick="ser('${id}')">SERVIR ➔</button>`;
     }
 
-    function servir(id) {
+    function ser(id) {
         const t = document.getElementById(`t-${id}`);
         const data = JSON.parse(t.dataset.info);
         socket.emit('finish_order_excel', data);
         ca += parseFloat(data.total); document.getElementById('rev').innerText = ca.toFixed(2)+"€";
         t.remove();
+    }
+
+    function annuler(id) {
+        if(confirm("⚠ Annuler définitivement cette commande ?")) {
+            const t = document.getElementById(`t-${id}`);
+            t.style.transition = "0.3s";
+            t.style.opacity = "0";
+            t.style.transform = "translateY(20px)";
+            setTimeout(() => { t.remove(); }, 300);
+        }
     }
 </script>
 </body>
