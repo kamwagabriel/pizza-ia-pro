@@ -12,18 +12,18 @@
         .ticket { background: var(--card); border: 2px solid #353b48; display: flex; flex-direction: column; position: relative; border-radius: 4px; transition: 0.3s; }
         .ticket-h { padding: 10px; background: #353b48; display: flex; justify-content: space-between; align-items: center; font-weight: bold; border-bottom: 1px solid #444; }
         .ticket-b { padding: 15px; flex-grow: 1; }
-        .items { font-size: 20px; font-weight: bold; color: #eee; margin: 12px 0; border-left: 5px solid var(--orange); padding-left: 12px; }
+        .items { font-size: 22px; font-weight: bold; color: #eee; margin: 12px 0; border-left: 5px solid var(--orange); padding-left: 12px; }
         
-        /* Animations et États */
         .urgent { border-color: var(--red) !important; animation: pulse-red 1.5s infinite; }
         .pret-anim { border-color: var(--green) !important; animation: pulse-green 1s infinite; }
         @keyframes pulse-red { 0%, 100% { box-shadow:0 0 5px var(--red); } 50% { box-shadow:0 0 20px var(--red); } }
         @keyframes pulse-green { 0%, 100% { box-shadow:0 0 5px var(--green); } 50% { box-shadow:0 0 20px var(--green); } }
         
-        /* Boutons */
-        .btn-step { border: none; padding: 18px; font-weight: bold; cursor: pointer; font-size: 18px; width: 100%; text-transform: uppercase; transition: 0.2s; }
-        .btn-cancel { background: transparent; border: 1px solid var(--red); color: var(--red); cursor: pointer; font-size: 10px; border-radius: 4px; padding: 5px 10px; font-weight: bold; }
-        .btn-cancel:hover { background: var(--red); color: white; }
+        /* Grille des boutons en bas */
+        .action-footer { display: grid; grid-template-columns: 1fr 2fr; gap: 5px; background: #222; }
+        .btn-step { border: none; padding: 20px; font-weight: bold; cursor: pointer; font-size: 16px; text-transform: uppercase; transition: 0.2s; }
+        .btn-cancel-main { background: #2d3436; color: var(--red); border-right: 1px solid #444; cursor: pointer; font-weight: bold; }
+        .btn-cancel-main:hover { background: var(--red); color: white; }
         
         .map-box { margin-top: 10px; padding: 10px; background: #273142; border-radius: 6px; border: 1px solid #3b82f6; }
     </style>
@@ -32,18 +32,14 @@
     <div class="header">
         <div style="font-size: 20px; font-weight: bold;">👨‍🍳 KDS PIZZA IA</div>
         <div id="clock" style="font-size: 24px; color: var(--blue);">00:00:00</div>
-        <div style="font-weight: bold;">CA: <span id="rev" style="color:var(--green)">0.00€</span> | <a href="/download_excel" style="color:#bdc3c7; font-size:12px; text-decoration: none;">📊 EXPORT</a></div>
+        <div style="font-weight: bold;">CA: <span id="rev" style="color:var(--green)">0.00€</span></div>
     </div>
     
     <div id="kds-grid" class="grid"></div>
-    
-    <audio id="notif" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3" preload="auto"></audio>
+    <audio id="notif" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"></audio>
 
 <script>
-    const socket = io(); 
-    let ca = 0;
-
-    // Horloge et mise à jour des timers
+    const socket = io(); let ca = 0;
     setInterval(() => { 
         document.getElementById('clock').innerText = new Date().toLocaleTimeString(); 
         upd(); 
@@ -51,40 +47,28 @@
 
     socket.on('new_order', (data) => {
         const ticket = document.createElement('div');
-        ticket.className = 'ticket'; 
-        ticket.id = `t-${data.id}`; 
-        ticket.dataset.start = Date.now();
+        ticket.className = 'ticket'; ticket.id = `t-${data.id}`; ticket.dataset.start = Date.now();
         ticket.dataset.info = JSON.stringify(data);
-        
-        // Sécurité pour l'adresse et Google Maps
-        const encodedAddr = encodeURIComponent(data.adresse || "Paris");
-        const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddr}`;
+        const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data.adresse)}`;
 
         ticket.innerHTML = `
             <div class="ticket-h">
-                <span style="color:var(--blue); font-size:22px;">#${data.order_num || '000'}</span>
-                <button class="btn-cancel" onclick="annuler('${data.id}')">✖ ANNULER</button>
-                <span class="tm" style="font-size:16px;">0:00</span>
+                <span style="color:var(--blue); font-size:22px;">#${data.order_num}</span>
+                <span class="tm" style="font-size:16px; background:#000; padding:2px 8px; border-radius:4px;">0:00</span>
             </div>
             <div class="ticket-b">
-                <div style="color:var(--orange); font-weight:bold; font-size:17px; margin-bottom:5px;">[${data.type || 'WEB'}] ${data.nom}</div>
+                <div style="color:var(--orange); font-weight:bold; font-size:17px; margin-bottom:5px;">[${data.type}] ${data.nom}</div>
                 <div class="items">${data.pizza}</div>
-                ${data.adresse && data.adresse !== 'N/A' ? `
-                    <div class="map-box">
-                        <div style="font-size:12px; color:#bdc3c7;">📍 ${data.adresse}</div>
-                        <a href="${mapUrl}" target="_blank" style="display:inline-block; margin-top:8px; background:#4285F4; color:white; text-decoration:none; padding:8px 12px; border-radius:5px; font-size:11px; font-weight:bold; width: 90%; text-align: center;">OUVRIR GOOGLE MAPS</a>
-                    </div>` : ''}
-                <div style="font-size:12px; color:var(--blue); margin-top:12px; font-weight:bold;">📞 CLIENT: ${data.tel}</div>
+                <div style="font-size:13px; color:#bdc3c7; margin-bottom:10px;">📍 ${data.adresse}</div>
+                <div style="font-size:12px; color:var(--blue); font-weight:bold;">📞 TEL: ${data.tel}</div>
             </div>
-            <div id="actions-${data.id}">
+            <div class="action-footer" id="actions-${data.id}">
+                <button class="btn-cancel-main" onclick="annuler('${data.id}')">ANNULER</button>
                 <button class="btn-step" style="background:var(--blue); color:white;" onclick="cui('${data.id}')">CUIRE 🍕</button>
             </div>
         `;
         document.getElementById('kds-grid').prepend(ticket);
-        
-        // Jouer le son
-        const sound = document.getElementById('notif');
-        sound.play().catch(e => console.log("Son bloqué : cliquez sur la page."));
+        document.getElementById('notif').play().catch(e=>{});
     });
 
     function upd() {
@@ -92,49 +76,44 @@
             if(t.classList.contains('fin')) return;
             let d = Math.floor((Date.now()-parseInt(t.dataset.start))/1000);
             t.querySelector('.tm').innerText = `${Math.floor(d/60)}:${(d%60)<10?'0':''}${d%60}`;
-            // Passage en rouge après 2 minutes (120s)
             if(d >= 120 && !t.classList.contains('work')) t.classList.add('urgent');
         });
     }
 
     function cui(id) {
         const t = document.getElementById(`t-${id}`);
-        t.classList.remove('urgent'); 
-        t.classList.add('work'); 
-        t.style.borderColor = "var(--blue)";
-        document.getElementById(`actions-${id}`).innerHTML = `<button class="btn-step" style="background:var(--orange); color:black;" onclick="pre('${id}')">PRÊT ✅</button>`;
+        t.classList.remove('urgent'); t.classList.add('work'); t.style.borderColor = "var(--blue)";
+        document.getElementById(`actions-${id}`).innerHTML = `
+            <button class="btn-cancel-main" onclick="annuler('${id}')">ANNULER</button>
+            <button class="btn-step" style="background:var(--orange); color:black;" onclick="pre('${id}')">PRÊT ✅</button>
+        `;
     }
 
     function pre(id) {
         const t = document.getElementById(`t-${id}`);
         t.classList.add('pret-anim', 'fin');
-        document.getElementById(`actions-${id}`).innerHTML = `<button class="btn-step" style="background:var(--green); color:black;" onclick="ser('${id}')">SERVIR ➔</button>`;
+        document.getElementById(`actions-${id}`).innerHTML = `
+            <button class="btn-cancel-main" onclick="annuler('${id}')">ANNULER</button>
+            <button class="btn-step" style="background:var(--green); color:black;" onclick="ser('${id}')">SERVIR ➔</button>
+        `;
     }
 
     function ser(id) {
         const t = document.getElementById(`t-${id}`);
         const data = JSON.parse(t.dataset.info);
         socket.emit('finish_order_excel', data);
-        ca += parseFloat(data.total); 
-        document.getElementById('rev').innerText = ca.toFixed(2)+"€";
+        ca += parseFloat(data.total); document.getElementById('rev').innerText = ca.toFixed(2)+"€";
         t.remove();
     }
 
-    // FONCTION ANNULER (BOUTON ROUGE)
     function annuler(id) {
-        if(confirm("⚠ Annuler définitivement cette commande ?")) {
+        if(confirm("⚠ Annuler définitivement cette pizza ?")) {
             const t = document.getElementById(`t-${id}`);
             t.style.opacity = "0";
             t.style.transform = "scale(0.8)";
             setTimeout(() => { t.remove(); }, 300);
-            // La commande est supprimée sans être ajoutée au CA ni à l'Excel
         }
     }
-
-    // Activer l'audio au premier clic
-    document.body.addEventListener('click', () => {
-        document.getElementById('notif').load();
-    }, {once: true});
 </script>
 </body>
 </html>
