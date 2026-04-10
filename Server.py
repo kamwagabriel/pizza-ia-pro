@@ -1,20 +1,21 @@
 from flask import Flask, render_template, request, jsonify
 from datetime import datetime
+import os
 
 app = Flask(__name__)
 
-# Liste pour stocker les commandes en mémoire vive (reset si le serveur redémarre)
+# Liste pour stocker les commandes (se vide si le serveur redémarre)
 orders = [
     {"id": 1, "client": "Exemple Jean", "commande": "1 Pizza Reine", "adresse": "12 rue de la Paix", "status": "En attente", "heure": "19:30"},
 ]
 
 @app.route('/')
 def index():
-    # Trie les commandes pour afficher les plus récentes en haut
+    # Affiche les commandes, les plus récentes en premier
     sorted_orders = sorted(orders, key=lambda x: x['id'], reverse=True)
     return render_template('index.html', orders=sorted_orders)
 
-# --- ROUTE POUR LE FORMULAIRE MANUEL (Ta démo actuelle) ---
+# --- ROUTE POUR LE FORMULAIRE MANUEL ---
 @app.route('/add_order', methods=['POST'])
 def add_order():
     client = request.form.get('client')
@@ -31,19 +32,16 @@ def add_order():
             "heure": datetime.now().strftime("%H:%M")
         }
         orders.append(new_order)
-    
     return jsonify({"status": "success"})
 
 # --- ROUTE POUR L'IA VOCALE (Vapi Webhook) ---
 @app.route('/webhook_vapi', methods=['POST'])
 def webhook_vapi():
-    data = request.json  # Récupère les données JSON envoyées par l'IA
-    
+    data = request.json
     if not data:
         return jsonify({"error": "No data received"}), 400
 
-    # L'IA va extraire ces infos de la conversation
-    # On utilise .get() pour éviter que le code plante si l'IA oublie une info
+    # L'IA extrait ces infos de l'appel
     nom_client = data.get('nom', 'Client Inconnu')
     details_commande = data.get('commande', 'Commande non précisée')
     adresse_client = data.get('adresse', 'À emporter')
@@ -58,11 +56,9 @@ def webhook_vapi():
     }
 
     orders.append(nouvelle_commande)
-    print(f"🎤 [IA] Nouvelle commande reçue : {details_commande} pour {nom_client}")
-    
-    return jsonify({"message": "Commande enregistrée avec succès"}), 200
+    return jsonify({"message": "Commande enregistrée"}), 200
 
-# --- ROUTE POUR CHANGER LE STATUT (Bouton Cuire/Prêt) ---
+# --- CHANGEMENT DE STATUT ---
 @app.route('/update_status/<int:order_id>', methods=['POST'])
 def update_status(order_id):
     for order in orders:
@@ -72,7 +68,11 @@ def update_status(order_id):
             elif order['status'] == "En préparation":
                 order['status'] = "Prêt / Livré"
             return jsonify({"status": "updated"})
-    return jsonify({"error": "Order not found"}), 404
+    return jsonify({"error": "Not found"}), 404
 
+# --- LANCEMENT DU SERVEUR (Configuré pour Render) ---
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Render utilise la variable d'environnement PORT
+    port = int(os.environ.get("PORT", 10000))
+    # host='0.0.0.0' est OBLIGATOIRE pour Render
+    app.run(host='0.0.0.0', port=port)
