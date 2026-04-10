@@ -3,3 +3,4 @@ flask-socketio
 pandas
 gevent
 gevent-websocket
+gunicorn
