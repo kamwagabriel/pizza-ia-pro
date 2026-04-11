@@ -2,94 +2,103 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>🍕 PIZZA IA CONTROLE PRO</title>
+    <title>🍕 KDS PIZZA IA - CUISINE</title>
     <style>
-        :root { --bg: #0f172a; --card: #ffffff; --orange: #f39c12; --blue: #3498db; --green: #2ecc71; --red: #e74c3c; --text: #1e293b; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 15px; }
+        :root { --bg: #0f172a; --card: #ffffff; --orange: #f39c12; --blue: #3498db; --green: #2ecc71; --red: #e74c3c; }
+        body { font-family: sans-serif; background: var(--bg); color: white; padding: 15px; margin: 0; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; border-bottom: 4px solid var(--orange); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
         
-        .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 20px; border-radius: 12px; margin-bottom: 25px; border-bottom: 4px solid var(--orange); }
-        .wait-tag { background: var(--red); color: white; padding: 8px 15px; border-radius: 8px; font-weight: bold; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
-
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
-        
-        .ticket { background: var(--card); color: var(--text); border-radius: 15px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: none; }
+        .ticket { background: var(--card); color: #1e293b; border-radius: 12px; overflow: hidden; position: relative; }
         .livraison-border { border-top: 8px solid var(--red); }
+        .ticket-h { padding: 10px; background: #f1f5f9; display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; }
+        .ticket-b { padding: 15px; }
+        .items { font-size: 24px; font-weight: 900; color: #000; border-left: 6px solid var(--orange); padding-left: 12px; margin: 10px 0; }
         
-        .ticket-h { padding: 12px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-weight: bold; }
-        .ticket-b { padding: 20px; }
-        .items { font-size: 26px; font-weight: 900; color: #000; border-left: 6px solid var(--orange); padding-left: 15px; margin: 15px 0; }
-        
-        .btn-maps { display: block; text-align: center; background: var(--green); color: white; text-decoration: none; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: bold; margin-bottom: 10px; }
-        .livreur-select { width: 100%; padding: 10px; margin-top: 10px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f1f5f9; font-weight: bold; }
-        
-        .footer { display: grid; grid-template-columns: 1fr 2fr; gap: 2px; background: #e2e8f0; }
-        .btn { border: none; padding: 20px; font-weight: bold; cursor: pointer; font-size: 14px; }
-        .btn-cancel { background: #fff1f1; color: var(--red); }
-        .btn-next { background: var(--blue); color: white; }
+        /* Alerte Clignotante Retard */
+        .late-alert { border: 4px solid var(--red) !important; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        .btn { border: none; padding: 18px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; text-transform: uppercase; }
+        .btn-ready { background: var(--blue); color: white; }
+        .btn-archive { background: var(--green); color: white; }
+        .btn-sms { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; width: 100%; padding: 8px; border-radius: 5px; cursor: pointer; font-weight: bold; margin: 10px 0; }
+        .btn-maps { display: block; text-align: center; background: #dcfce7; color: #166534; text-decoration: none; padding: 8px; border-radius: 5px; font-size: 12px; font-weight: bold; margin-bottom: 10px; border: 1px solid #166534; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <div>
-            <h1 style="margin:0">👨‍🍳 PIZZA IA CUISINE</h1>
-            <div style="margin-top:10px;"><span class="wait-tag">⏳ ATTENTE : {{ wait_time }} MIN</span></div>
+            <h2 style="margin:0">🍕 PIZZA IA KDS</h2>
+            <div id="wait-display" style="color:var(--red); font-weight:bold; font-size:14px;"></div>
         </div>
         <div style="text-align:right">
-            <div style="font-size:24px; color:var(--green); font-weight:bold;">CA : {{ "%.2f"|format(ca) }}€</div>
-            <a href="/export_excel" style="color:var(--blue); font-weight:bold; text-decoration:none;">📥 EXPORT EXCEL</a>
+            <div style="font-size:22px; color:var(--green); font-weight:bold;">CA : {{ "%.2f"|format(ca) }}€</div>
+            <a href="/export_excel" style="color:var(--blue); text-decoration:none; font-size:12px;">📊 EXPORT EXCEL</a>
         </div>
     </div>
 
     <div class="grid">
         {% for order in orders %}
-        <div id="t-{{ order.id }}" class="ticket {% if order.type == 'LIVRAISON' %}livraison-border{% endif %}">
+        <div id="t-{{ order.id }}" class="ticket {% if order.type == 'LIVRAISON' %}livraison-border{% endif %}" data-time="{{ order.heure }}">
             <div class="ticket-h">
                 <span>#{{ order.id }} - {{ order.heure }}</span>
-                <span style="color:var(--orange)">{{ order.type }}</span>
+                <span style="color:var(--blue)">{{ order.type }}</span>
             </div>
             <div class="ticket-b">
                 <div class="items">{{ order.commande }}</div>
-                <div style="font-weight: bold;">👤 {{ order.client }}</div>
-                <div style="font-size: 14px; color:#64748b; margin-bottom:10px;">📍 {{ order.adresse }}</div>
+                <div style="font-weight:bold">👤 {{ order.client }}</div>
                 
-                {% if order.maps_url %}
-                <a href="{{ order.maps_url }}" target="_blank" class="btn-maps">🗺️ GOOGLE MAPS LIVREUR</a>
+                {% if order.type == 'LIVRAISON' %}
+                    <div style="font-size:13px; color:gray; margin-bottom:10px;">📍 {{ order.adresse }}</div>
+                    <a href="{{ order.maps_url }}" target="_blank" class="btn-maps">🗺️ GOOGLE MAPS</a>
+                {% else %}
+                    <button class="btn-sms" onclick="alert('SMS Envoyé au client !')">🔔 RAPPELER CLIENT (SMS)</button>
                 {% endif %}
-
-                <select class="livreur-select">
-                    {% for livreur in livreurs %}
-                    <option value="{{ livreur }}">🛵 {{ livreur }}</option>
-                    {% endfor %}
-                </select>
             </div>
+
             <div class="footer" id="f-{{ order.id }}">
-                <button class="btn btn-cancel" onclick="annuler('{{ order.id }}')">ANNULER</button>
-                <button class="btn btn-next" onclick="etape2('{{ order.id }}')">CUIRE 🍕</button>
+                {% if order.status == 'En attente' %}
+                    <button class="btn btn-ready" onclick="changerStatut('{{ order.id }}', 'Prêt')">CUIRE / PRÊT ✅</button>
+                {% else %}
+                    <button class="btn btn-archive" onclick="changerStatut('{{ order.id }}', 'Archivé')">LIVRÉ / REMIS ➔</button>
+                {% endif %}
             </div>
         </div>
         {% endfor %}
     </div>
 
     <script>
-        function etape2(id) {
-            document.getElementById(`f-${id}`).innerHTML = `
-                <button class="btn btn-cancel" onclick="annuler('${id}')">ANNULER</button>
-                <button class="btn btn-next" style="background:var(--orange)" onclick="etape3('${id}')">PRÊT ✅</button>`;
+        function changerStatut(id, newStatus) {
+            fetch('/update_status', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: id, status: newStatus})
+            }).then(() => location.reload());
         }
-        function etape3(id) {
-            document.getElementById(`f-${id}`).innerHTML = `
-                <button class="btn btn-cancel" onclick="annuler('${id}')">ANNULER</button>
-                <button class="btn btn-next" style="background:var(--green)" onclick="finir('${id}')">SERVIR ➔</button>`;
+
+        // Calcul temps attente et gestion alertes retard
+        function updateKDS() {
+            const now = new Date();
+            const tickets = document.querySelectorAll('.ticket');
+            
+            // Affichage temps d'attente global
+            document.getElementById('wait-display').innerText = `⏳ ATTENTE : ${tickets.length * 10} MIN`;
+
+            tickets.forEach(t => {
+                const [h, m] = t.dataset.time.split(':');
+                const oTime = new Date(); oTime.setHours(h, m);
+                // Si plus de 15 minutes -> Clignote
+                if ((now - oTime) / 60000 > 15) t.classList.add('late-alert');
+            });
         }
-        function finir(id) {
-            document.getElementById(`t-${id}`).style.opacity = '0.2';
-            document.getElementById(`t-${id}`).style.pointerEvents = 'none';
-        }
-        function annuler(id) {
-            if(confirm("Confirmer l'annulation ?")) document.getElementById(`t-${id}`).remove();
-        }
+
+        setInterval(updateKDS, 10000);
+        updateKDS();
+
+        // Rafraîchissement auto pour les nouvelles commandes IA
+        setTimeout(() => location.reload(), 30000);
     </script>
 </body>
 </html>
