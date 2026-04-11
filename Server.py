@@ -6,15 +6,13 @@ import io
 
 app = Flask(__name__)
 
-# Base de données en mémoire vive
+# Base de données temporaire
 orders = []
 total_ca = 0.0
 
 @app.route('/')
 def index():
-    # On n'affiche que les commandes non archivées
     active_orders = [o for o in orders if o.get('status') != 'Archivé']
-    # Les plus récentes en haut
     sorted_orders = sorted(active_orders, key=lambda x: x['id'], reverse=True)
     return render_template('index.html', orders=sorted_orders, ca=total_ca)
 
@@ -24,7 +22,7 @@ def webhook_vapi():
     data = request.json
     if not data: return jsonify({"error": "No data"}), 400
 
-    # 1. RÉCUPÉRATION DU PRIX (Sécurité anti-bug)
+    # 1. RÉCUPÉRATION DU PRIX
     prix_ia = data.get('prix') or data.get('price') or data.get('total')
     try:
         valeur_prix = float(prix_ia)
@@ -32,21 +30,19 @@ def webhook_vapi():
         valeur_prix = 0.0
     total_ca += valeur_prix
 
-    # 2. NETTOYAGE DE LA COMMANDE (Sécurité "Grosse commande")
+    # 2. NETTOYAGE DU TEXTE COMMANDE
     raw_cmd = data.get('commande') or data.get('order') or "Détails non transmis"
-    # Si l'IA envoie une liste ou un objet, on le transforme en texte lisible
     if isinstance(raw_cmd, (list, dict)):
         commande_txt = str(raw_cmd).replace('[','').replace(']','').replace('{','').replace('}','').replace("'", "")
     else:
         commande_txt = str(raw_cmd)
 
-    # 3. CALCUL DE L'ATTENTE (10 min par ticket déjà en cuisine)
+    # 3. CALCUL DE L'ATTENTE (10 min par ticket actif)
     commandes_actives = [o for o in orders if o['status'] != 'Archivé']
     attente_estimee = (len(commandes_actives) + 1) * 10
 
-    # 4. TYPE DE COMMANDE (Livraison vs Emporter)
+    # 4. LOGIQUE LIVRAISON / EMPORTER
     adresse = data.get('adresse', 'À emporter')
-    # Si l'adresse contient des mots clés de rue ou est longue, c'est une livraison
     est_livraison = any(word in adresse.lower() for word in ["rue", "ave", "bd", "place", "route", "allée"]) or len(adresse) > 10
 
     orders.append({
@@ -75,21 +71,14 @@ def update_status():
 @app.route('/export_excel')
 def export_excel():
     try:
-        if not orders: return "Aucune donnée à exporter", 400
-        # On crée un tableau propre pour Excel
+        if not orders: return "Aucune donnée", 400
         df = pd.DataFrame(orders).drop(columns=['maps_url'], errors='ignore')
-        
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df.to_excel(writer, index=False, sheet_name='Ventes_Pizza_IA')
+            df.to_excel(writer, index=False, sheet_name='Ventes_IA')
         output.seek(0)
-        
-        return send_file(
-            output, 
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            as_attachment=True, 
-            download_name=f"cloture_{datetime.now().strftime('%d_%m_%Hh%M')}.xlsx"
-        )
+        return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                         as_attachment=True, download_name=f"cloture_{datetime.now().strftime('%d_%m')}.xlsx")
     except Exception as e:
         return f"Erreur : {str(e)}", 500
 
