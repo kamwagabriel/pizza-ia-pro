@@ -6,14 +6,12 @@ import io
 
 app = Flask(__name__)
 
-# Base de données temporaire
 orders = []
 total_ca = 0.0
 stats = {"livraison": 0, "emporter": 0}
 
 @app.route('/')
 def index():
-    # On affiche uniquement les commandes non archivées
     active_orders = [o for o in orders if o.get('status') != 'Archivé']
     sorted_orders = sorted(active_orders, key=lambda x: x['id'], reverse=True)
     return render_template('index.html', orders=sorted_orders, ca=total_ca, stats=stats)
@@ -24,22 +22,16 @@ def webhook_vapi():
     data = request.json
     if not data: return jsonify({"error": "No data"}), 400
 
-    # Récupération du prix exact annoncé par l'IA
+    # SYNCHRO PRIX : On récupère la valeur exacte de l'IA
     try:
         prix_ia = float(data.get('prix') or data.get('total') or 12.0)
     except:
         prix_ia = 12.0
     
     total_ca += prix_ia
-
     adresse = data.get('adresse', 'À emporter')
-    # Détection automatique du type
     est_livraison = any(word in adresse.lower() for word in ["rue", "ave", "bd", "place", "route", "allée"]) or len(adresse) > 10
-    type_cmd = "LIVRAISON" if est_livraison else "EMPORTER"
     
-    if type_cmd == "LIVRAISON": stats["livraison"] += 1
-    else: stats["emporter"] += 1
-
     orders.append({
         "id": len(orders) + 1,
         "heure": datetime.now().strftime("%H:%M"),
@@ -47,8 +39,8 @@ def webhook_vapi():
         "phone": data.get('phone', ''),
         "commande": data.get('commande', 'Pizza'),
         "adresse": adresse,
-        "type": type_cmd,
-        "prix": prix_ia,
+        "type": "LIVRAISON" if est_livraison else "EMPORTER",
+        "prix": prix_ia, # Prix stocké ici
         "status": "En attente",
         "maps_url": f"https://www.google.com/maps/search/?api=1&query={adresse.replace(' ', '+')}" if est_livraison else None
     })
