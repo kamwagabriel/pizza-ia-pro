@@ -6,17 +6,14 @@ import io
 
 app = Flask(__name__)
 
-# Base de données temporaire
 orders = []
 total_ca = 0.0
-stats = {"livraison": 0, "emporter": 0}
 
 @app.route('/')
 def index():
-    # On affiche uniquement les commandes non archivées
     active_orders = [o for o in orders if o.get('status') != 'Archivé']
     sorted_orders = sorted(active_orders, key=lambda x: x['id'], reverse=True)
-    return render_template('index.html', orders=sorted_orders, ca=total_ca, stats=stats)
+    return render_template('index.html', orders=sorted_orders, ca=total_ca)
 
 @app.route('/webhook_vapi', methods=['POST'])
 def webhook_vapi():
@@ -24,31 +21,38 @@ def webhook_vapi():
     data = request.json
     if not data: return jsonify({"error": "No data"}), 400
 
-    # RÉCUPÉRATION DU PRIX DE L'IA (Sans valeur par défaut à 12)
-    prix_ia_brut = data.get('prix') or data.get('price') or data.get('total')
+    # 1. RÉCUPÉRATION DU PRIX (Sécurité anti-0)
+    prix_ia = data.get('prix') or data.get('price') or data.get('total')
     try:
-        valeur_prix = float(prix_ia_brut)
+        valeur_prix = float(prix_ia)
     except (TypeError, ValueError):
-        valeur_prix = 0.0  # Affiche 0 si l'IA ne transmet pas l'info
-    
+        valeur_prix = 0.0
     total_ca += valeur_prix
 
+    # 2. NETTOYAGE DE LA COMMANDE (Sécurité anti-ticket vide)
+    # Si l'IA envoie une liste ou un objet, on le transforme en texte lisible
+    raw_cmd = data.get('commande') or data.get('order') or "Détails non transmis"
+    if isinstance(raw_cmd, (list, dict)):
+        commande_txt = str(raw_cmd).replace('[','').replace(']','').replace('{','').replace('}','').replace("'", "")
+    else:
+        commande_txt = str(raw_cmd)
+
+    # 3. CALCUL DE L'ATTENTE PAR TICKET (10 min par commande en cours)
+    commandes_actives = [o for o in orders if o['status'] != 'Archivé']
+    attente_estimee = (len(commandes_actives) + 1) * 10
+
     adresse = data.get('adresse', 'À emporter')
-    # Détection automatique du type de commande
     est_livraison = any(word in adresse.lower() for word in ["rue", "ave", "bd", "place", "route", "allée"]) or len(adresse) > 10
-    
-    if est_livraison: stats["livraison"] += 1
-    else: stats["emporter"] += 1
 
     orders.append({
         "id": len(orders) + 1,
         "heure": datetime.now().strftime("%H:%M"),
-        "client": data.get('nom', 'Client Inconnu'),
-        "phone": data.get('phone', ''),
-        "commande": data.get('commande', 'Pizza'),
+        "client": data.get('nom') or data.get('customer') or 'Client',
+        "commande": commande_txt,
         "adresse": adresse,
         "type": "LIVRAISON" if est_livraison else "EMPORTER",
         "prix": valeur_prix,
+        "attente": attente_estimee,
         "status": "En attente",
         "maps_url": f"https://www.google.com/maps/search/?api=1&query={adresse.replace(' ', '+')}" if est_livraison else None
     })
@@ -67,21 +71,13 @@ def update_status():
 def export_excel():
     try:
         if not orders: return "Aucune donnée", 400
-        
-        # On nettoie les données pour l'export Excel
         df = pd.DataFrame(orders).drop(columns=['maps_url'], errors='ignore')
-        
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             df.to_excel(writer, index=False, sheet_name='Ventes')
         output.seek(0)
-        
-        return send_file(
-            output,
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            as_attachment=True,
-            download_name=f"ventes_{datetime.now().strftime('%d_%m')}.xlsx"
-        )
+        return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                         as_attachment=True, download_name=f"ventes_{datetime.now().strftime('%d_%m')}.xlsx")
     except Exception as e:
         return f"Erreur Export: {str(e)}", 500
 
