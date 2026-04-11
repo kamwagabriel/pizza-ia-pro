@@ -4,12 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>👨‍🍳 KDS - PIZZA IA</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
-        /* Couleurs plus claires pour éviter l'écran tout noir */
         :root { 
-            --bg: #1e293b; /* Bleu-gris foncé mais visible */
-            --card: #ffffff; /* Tickets blancs pour bien les voir */
+            --bg: #1e293b; 
+            --card: #ffffff; 
             --orange: #f39c12; 
             --blue: #3498db;
             --green: #2ecc71;
@@ -22,8 +20,6 @@
             margin: 0; 
             padding: 10px; 
         }
-        
-        /* Barre du haut toujours visible */
         .header { 
             display: flex; 
             justify-content: space-between; 
@@ -34,14 +30,11 @@
             border-radius: 8px;
             margin-bottom: 20px;
         }
-
         .grid { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
             gap: 15px; 
         }
-
-        /* Style des tickets (Blanc pour contraster) */
         .ticket { 
             background: var(--card); 
             color: #1e293b; 
@@ -50,91 +43,61 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             animation: fadeIn 0.4s ease;
         }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10s); } to { opacity: 1; transform: translateY(0); } }
-
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .ticket-h { padding: 10px; background: #f1f5f9; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; }
         .ticket-b { padding: 15px; }
         .items { font-size: 22px; font-weight: 900; color: #000; border-left: 5px solid var(--orange); padding-left: 10px; margin: 10px 0; }
-
-        /* Boutons en bas */
         .footer { display: grid; grid-template-columns: 1fr 2fr; gap: 2px; background: #ddd; }
         .btn { border: none; padding: 15px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
         .btn-cancel { background: #fee2e2; color: var(--red); }
         .btn-next { background: var(--blue); color: white; }
-
-        .urgent-border { border: 3px solid var(--red) !important; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <div style="font-size: 18px; font-weight: bold;">🍕 PIZZA IA - CUISINE</div>
-        <div style="font-weight: bold;">CA: <span id="rev" style="color:var(--green)">0.00€</span></div>
+        <div style="font-weight: bold;">STATUT: <span style="color:var(--green)">EN LIGNE</span></div>
     </div>
 
     <div id="kds-grid" class="grid">
-        </div>
-
-    <audio id="notif" src="https://raw.githubusercontent.com/rafael080/DLS-Sounds/master/notification.mp3" preload="auto"></audio>
-
-<script>
-    const socket = io();
-    let ca = 0;
-    const sound = document.getElementById('notif');
-
-    socket.on('new_order', (data) => {
-        sound.play().catch(e => {}); // Joue le son
-
-        const t = document.createElement('div');
-        t.id = `t-${data.id}`;
-        t.className = 'ticket' + (data.type === 'URGENT' ? ' urgent-border' : '');
-        t.dataset.info = JSON.stringify(data);
-
-        t.innerHTML = `
-            <div class="ticket-h"><span>#${data.order_num}</span><span>${data.time}</span></div>
+        {% for order in orders %}
+        <div id="t-{{ order.id }}" class="ticket">
+            <div class="ticket-h">
+                <span>#{{ order.id }}</span>
+                <span>{{ order.heure }}</span>
+            </div>
             <div class="ticket-b">
-                <div style="font-size:12px; color:var(--blue); font-weight:bold;">${data.type}</div>
-                <div class="items">${data.pizza}</div>
-                <div style="font-size:13px; color:#64748b;">👤 ${data.nom}</div>
+                <div style="font-size:12px; color:var(--blue); font-weight:bold;">COMMANDE IA</div>
+                <div class="items">{{ order.commande }}</div>
+                <div style="font-size:13px; color:#64748b;">👤 {{ order.client }}</div>
+                <div style="font-size:13px; color:#64748b;">📍 {{ order.adresse }}</div>
             </div>
-            <div class="footer" id="f-${data.id}">
-                <button class="btn btn-cancel" onclick="annuler('${data.id}')">ANNULER</button>
-                <button class="btn btn-next" onclick="etape2('${data.id}')">CUIRE 🍕</button>
+            <div class="footer" id="f-{{ order.id }}">
+                <button class="btn btn-cancel" onclick="annuler('{{ order.id }}')">ANNULER</button>
+                <button class="btn btn-next" onclick="etape2('{{ order.id }}')">CUIRE 🍕</button>
             </div>
-        `;
-        document.getElementById('kds-grid').prepend(t);
-    });
+        </div>
+        {% endfor %}
+    </div>
 
-    function etape2(id) {
-        document.getElementById(`f-${id}`).innerHTML = `
-            <button class="btn btn-cancel" onclick="annuler('${id}')">ANNULER</button>
-            <button class="btn btn-next" style="background:var(--orange)" onclick="etape3('${id}')">PRÊT ✅</button>`;
-    }
-
-    function etape3(id) {
-        document.getElementById(`f-${id}`).innerHTML = `
-            <button class="btn btn-cancel" onclick="annuler('${id}')">ANNULER</button>
-            <button class="btn btn-next" style="background:var(--green)" onclick="finir('${id}')">SERVIR ➔</button>`;
-    }
-
-    function finir(id) {
-        const t = document.getElementById(`t-${id}`);
-        const data = JSON.parse(t.dataset.info);
-        ca += parseFloat(data.total);
-        document.getElementById('rev').innerText = ca.toFixed(2) + "€";
-        socket.emit('finish_order_excel', data);
-        t.remove();
-    }
-
-    function annuler(id) {
-        if(confirm("Supprimer cette commande ?")) document.getElementById(`t-${id}`).remove();
-    }
-
-    // Débloque le son au premier clic
-    document.body.addEventListener('click', () => {
-        sound.play().then(() => { sound.pause(); sound.currentTime = 0; });
-    }, {once: true});
-</script>
-
+    <script>
+        function etape2(id) {
+            document.getElementById(`f-${id}`).innerHTML = `
+                <button class="btn btn-cancel" onclick="annuler('${id}')">ANNULER</button>
+                <button class="btn btn-next" style="background:var(--orange)" onclick="etape3('${id}')">PRÊT ✅</button>`;
+        }
+        function etape3(id) {
+            document.getElementById(`f-${id}`).innerHTML = `
+                <button class="btn btn-cancel" onclick="annuler('${id}')">ANNULER</button>
+                <button class="btn btn-next" style="background:var(--green)" onclick="finir('${id}')">SERVIR ➔</button>`;
+        }
+        function finir(id) {
+            document.getElementById(`t-${id}`).remove();
+        }
+        function annuler(id) {
+            if(confirm("Supprimer cette commande ?")) document.getElementById(`t-${id}`).remove();
+        }
+    </script>
 </body>
 </html>
