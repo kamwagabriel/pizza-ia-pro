@@ -6,7 +6,7 @@ import io
 
 app = Flask(__name__)
 
-# Base de données en mémoire
+# Base de données temporaire
 orders = []
 total_ca = 0.0
 stats = {"livraison": 0, "emporter": 0}
@@ -24,7 +24,7 @@ def webhook_vapi():
     data = request.json
     if not data: return jsonify({"error": "No data"}), 400
 
-    # Prix envoyé par l'IA ou 12€ par défaut
+    # Récupération du prix exact annoncé par l'IA
     try:
         prix_ia = float(data.get('prix') or data.get('total') or 12.0)
     except:
@@ -33,13 +33,14 @@ def webhook_vapi():
     total_ca += prix_ia
 
     adresse = data.get('adresse', 'À emporter')
-    # Détection automatique Livraison vs Emporter
-    type_cmd = "LIVRAISON" if any(word in adresse.lower() for word in ["rue", "ave", "bd", "place", "route", "allée"]) or len(adresse) > 10 else "EMPORTER"
+    # Détection automatique du type
+    est_livraison = any(word in adresse.lower() for word in ["rue", "ave", "bd", "place", "route", "allée"]) or len(adresse) > 10
+    type_cmd = "LIVRAISON" if est_livraison else "EMPORTER"
     
     if type_cmd == "LIVRAISON": stats["livraison"] += 1
     else: stats["emporter"] += 1
 
-    nouvelle_commande = {
+    orders.append({
         "id": len(orders) + 1,
         "heure": datetime.now().strftime("%H:%M"),
         "client": data.get('nom', 'Client Inconnu'),
@@ -49,9 +50,8 @@ def webhook_vapi():
         "type": type_cmd,
         "prix": prix_ia,
         "status": "En attente",
-        "maps_url": f"https://www.google.com/maps/search/?api=1&query={adresse.replace(' ', '+')}" if type_cmd == "LIVRAISON" else None
-    }
-    orders.append(nouvelle_commande)
+        "maps_url": f"https://www.google.com/maps/search/?api=1&query={adresse.replace(' ', '+')}" if est_livraison else None
+    })
     return jsonify({"status": "ok"}), 200
 
 @app.route('/update_status', methods=['POST'])
@@ -71,7 +71,7 @@ def export_excel():
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         df.to_excel(writer, index=False)
     output.seek(0)
-    return send_file(output, mimetype='application/vnd.ms-excel', as_attachment=True, download_name="ventes_pizza.xlsx")
+    return send_file(output, mimetype='application/vnd.ms-excel', as_attachment=True, download_name="ventes.xlsx")
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
