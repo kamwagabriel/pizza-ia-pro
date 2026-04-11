@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>🍕 PIZZA IA DASHBOARD</title>
+    <title>🍕 PIZZA IA KDS</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --bg: #0f172a; --card: #ffffff; --orange: #f39c12; --blue: #3498db; --green: #2ecc71; --red: #e74c3c; }
@@ -24,15 +24,15 @@
         .btn-cook { background: var(--orange); }
         .btn-ready { background: var(--blue); }
         .btn-archive { background: var(--green); }
-        #chart-container { width: 100px; height: 100px; }
+        #chart-container { width: 110px; height: 110px; background: rgba(255,255,255,0.05); border-radius: 50%; padding: 5px; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <div>
-            <h2 style="margin:0">🍕 KDS PIZZA IA</h2>
-            <div style="font-size:14px; opacity:0.8;">{{ orders|length }} Commande(s) en cours</div>
+            <h2 style="margin:0">🍕 PIZZA IA</h2>
+            <div style="font-size:14px; opacity:0.8;">{{ orders|length }} Commandes en cours</div>
         </div>
         
         <div id="chart-container">
@@ -69,7 +69,7 @@
             {% elif order.status == 'En cuisson' %}
                 <button class="btn btn-ready" onclick="changerStatut('{{ order.id }}', 'Prêt')">SORTIR / PRÊT ✅</button>
             {% elif order.status == 'Prêt' %}
-                <button class="btn btn-archive" onclick="changerStatut('{{ order.id }}', 'Archivé')">LIVRÉ / ARCHIVER ➔</button>
+                <button class="btn btn-archive" onclick="changerStatut('{{ order.id }}', 'ARCHIVER ➔')">ARCHIVER ➔</button>
             {% endif %}
         </div>
         {% endfor %}
@@ -78,26 +78,32 @@
     <audio id="notif-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
     <script>
-        // Graphique
+        // GRAPHIE INITIALISATION (S'exécute à chaque refresh)
+        const ctx = document.getElementById('orderChart').getContext('2d');
         const nbLivraison = {{ orders|selectattr("type", "equalto", "LIVRAISON")|list|length }};
         const nbEmporter = {{ orders|selectattr("type", "equalto", "EMPORTER")|list|length }};
         
-        new Chart(document.getElementById('orderChart'), {
-            type: 'doughnut',
-            data: {
-                datasets: [{
-                    data: [nbLivraison, nbEmporter],
-                    backgroundColor: ['#e74c3c', '#3498db'],
-                    borderWidth: 0
-                }]
-            },
-            options: { cutout: '75%', plugins: { legend: { display: false } } }
-        });
+        // On ne dessine que s'il y a des données pour éviter un cercle vide
+        if(nbLivraison > 0 || nbEmporter > 0) {
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Livraison', 'Emporter'],
+                    datasets: [{
+                        data: [nbLivraison, nbEmporter],
+                        backgroundColor: ['#e74c3c', '#3498db'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { cutout: '70%', plugins: { legend: { display: false } } }
+            });
+        }
 
-        // Notifications
+        // Notification sonore
         const currentCount = {{ orders|length }};
-        if (sessionStorage.getItem('lastC') && currentCount > sessionStorage.getItem('lastC')) {
-            document.getElementById('notif-sound').play().catch(() => {});
+        const lastC = sessionStorage.getItem('lastC');
+        if (lastC && currentCount > lastC) {
+            document.getElementById('notif-sound').play().catch(()=>{});
         }
         sessionStorage.setItem('lastC', currentCount);
 
@@ -109,6 +115,7 @@
             }).then(() => location.reload());
         }
 
+        // Rafraîchissement auto
         setTimeout(() => location.reload(), 20000);
     </script>
 </body>
