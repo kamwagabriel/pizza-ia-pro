@@ -2,27 +2,37 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>🍕 KDS PIZZA IA - CUISINE</title>
+    <title>🍕 KDS PIZZA IA - LIVE</title>
     <style>
         :root { --bg: #0f172a; --card: #ffffff; --orange: #f39c12; --blue: #3498db; --green: #2ecc71; --red: #e74c3c; }
-        body { font-family: sans-serif; background: var(--bg); color: white; padding: 15px; margin: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; padding: 15px; margin: 0; }
+        
         .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; border-bottom: 4px solid var(--orange); }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
         
-        .ticket { background: var(--card); color: #1e293b; border-radius: 12px; overflow: hidden; position: relative; }
-        .livraison-border { border-top: 8px solid var(--red); }
+        .ticket { background: var(--card); color: #1e293b; border-radius: 12px; overflow: hidden; position: relative; border: none; }
+        .livraison-border { border-top: 8px solid var(--red) !important; }
+        
         .ticket-h { padding: 10px; background: #f1f5f9; display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; }
         .ticket-b { padding: 15px; }
-        .items { font-size: 24px; font-weight: 900; color: #000; border-left: 6px solid var(--orange); padding-left: 12px; margin: 10px 0; }
+        .items { font-size: 26px; font-weight: 900; color: #000; border-left: 6px solid var(--orange); padding-left: 12px; margin: 10px 0; }
         
-        /* Alerte Clignotante Retard */
+        /* Animation Retard */
         .late-alert { border: 4px solid var(--red) !important; animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
 
-        .btn { border: none; padding: 18px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; text-transform: uppercase; }
-        .btn-ready { background: var(--blue); color: white; }
-        .btn-archive { background: var(--green); color: white; }
-        .btn-sms { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; width: 100%; padding: 8px; border-radius: 5px; cursor: pointer; font-weight: bold; margin: 10px 0; }
+        /* Status Badges */
+        .badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; font-weight: bold; }
+        .status-Enattente { background: #cbd5e1; color: #475569; }
+        .status-Encuisson { background: var(--orange); color: white; }
+        .status-Prêt { background: var(--blue); color: white; }
+
+        .btn { border: none; padding: 18px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; color: white; }
+        .btn-cook { background: var(--orange); }
+        .btn-ready { background: var(--blue); }
+        .btn-archive { background: var(--green); }
+        
+        .btn-sms { background: #fff7ed; color: #c2410c; border: 1px solid #fdba74; width: 100%; padding: 8px; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; }
         .btn-maps { display: block; text-align: center; background: #dcfce7; color: #166534; text-decoration: none; padding: 8px; border-radius: 5px; font-size: 12px; font-weight: bold; margin-bottom: 10px; border: 1px solid #166534; }
     </style>
 </head>
@@ -30,12 +40,12 @@
 
     <div class="header">
         <div>
-            <h2 style="margin:0">🍕 PIZZA IA KDS</h2>
-            <div id="wait-display" style="color:var(--red); font-weight:bold; font-size:14px;"></div>
+            <h2 style="margin:0">🍕 KDS PIZZA IA</h2>
+            <div id="wait-info" style="color:var(--red); font-weight:bold; font-size:14px;"></div>
         </div>
         <div style="text-align:right">
-            <div style="font-size:22px; color:var(--green); font-weight:bold;">CA : {{ "%.2f"|format(ca) }}€</div>
-            <a href="/export_excel" style="color:var(--blue); text-decoration:none; font-size:12px;">📊 EXPORT EXCEL</a>
+            <div style="font-size:24px; color:var(--green); font-weight:bold;">{{ "%.2f"|format(ca) }}€</div>
+            <a href="/export_excel" style="color:var(--blue); text-decoration:none; font-size:12px;">📊 EXCEL</a>
         </div>
     </div>
 
@@ -44,7 +54,7 @@
         <div id="t-{{ order.id }}" class="ticket {% if order.type == 'LIVRAISON' %}livraison-border{% endif %}" data-time="{{ order.heure }}">
             <div class="ticket-h">
                 <span>#{{ order.id }} - {{ order.heure }}</span>
-                <span style="color:var(--blue)">{{ order.type }}</span>
+                <span class="badge status-{{ order.status|replace(' ', '') }}">{{ order.status }}</span>
             </div>
             <div class="ticket-b">
                 <div class="items">{{ order.commande }}</div>
@@ -54,22 +64,39 @@
                     <div style="font-size:13px; color:gray; margin-bottom:10px;">📍 {{ order.adresse }}</div>
                     <a href="{{ order.maps_url }}" target="_blank" class="btn-maps">🗺️ GOOGLE MAPS</a>
                 {% else %}
-                    <button class="btn-sms" onclick="alert('SMS Envoyé au client !')">🔔 RAPPELER CLIENT (SMS)</button>
+                    <button class="btn-sms" onclick="alert('SMS de relance envoyé !')">🔔 RELANCE CLIENT</button>
                 {% endif %}
             </div>
 
-            <div class="footer" id="f-{{ order.id }}">
+            <div class="footer">
                 {% if order.status == 'En attente' %}
-                    <button class="btn btn-ready" onclick="changerStatut('{{ order.id }}', 'Prêt')">CUIRE / PRÊT ✅</button>
-                {% else %}
-                    <button class="btn btn-archive" onclick="changerStatut('{{ order.id }}', 'Archivé')">LIVRÉ / REMIS ➔</button>
+                    <button class="btn btn-cook" onclick="changerStatut('{{ order.id }}', 'En cuisson')">METTRE AU FOUR 🔥</button>
+                {% elif order.status == 'En cuisson' %}
+                    <button class="btn btn-ready" onclick="changerStatut('{{ order.id }}', 'Prêt')">SORTIR / PRÊT ✅</button>
+                {% elif order.status == 'Prêt' %}
+                    <button class="btn btn-archive" onclick="changerStatut('{{ order.id }}', 'Archivé')">
+                        {% if order.type == 'LIVRAISON' %}LIVRÉ ➔{% else %}REMIS ➔{% endif %}
+                    </button>
                 {% endif %}
             </div>
         </div>
         {% endfor %}
     </div>
 
+    <audio id="notif-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
     <script>
+        // Gestion du DING
+        const currentCount = {{ orders|length }};
+        const lastCount = sessionStorage.getItem('orderCount');
+
+        window.onload = function() {
+            if (lastCount !== null && currentCount > parseInt(lastCount)) {
+                document.getElementById('notif-sound').play().catch(e => console.log("Cliquez sur la page pour activer le son"));
+            }
+            sessionStorage.setItem('orderCount', currentCount);
+        };
+
         function changerStatut(id, newStatus) {
             fetch('/update_status', {
                 method: 'POST',
@@ -78,27 +105,21 @@
             }).then(() => location.reload());
         }
 
-        // Calcul temps attente et gestion alertes retard
-        function updateKDS() {
+        function refreshData() {
             const now = new Date();
             const tickets = document.querySelectorAll('.ticket');
-            
-            // Affichage temps d'attente global
-            document.getElementById('wait-display').innerText = `⏳ ATTENTE : ${tickets.length * 10} MIN`;
+            document.getElementById('wait-info').innerText = `⏳ ATTENTE : ${tickets.length * 10} MIN`;
 
             tickets.forEach(t => {
                 const [h, m] = t.dataset.time.split(':');
                 const oTime = new Date(); oTime.setHours(h, m);
-                // Si plus de 15 minutes -> Clignote
                 if ((now - oTime) / 60000 > 15) t.classList.add('late-alert');
             });
         }
 
-        setInterval(updateKDS, 10000);
-        updateKDS();
-
-        // Rafraîchissement auto pour les nouvelles commandes IA
-        setTimeout(() => location.reload(), 30000);
+        setInterval(refreshData, 10000);
+        refreshData();
+        setTimeout(() => location.reload(), 20000); // Check nouvelles commandes toutes les 20s
     </script>
 </body>
 </html>
