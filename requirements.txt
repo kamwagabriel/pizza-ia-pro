@@ -1,6 +1,7 @@
 flask
 flask-socketio
 pandas
+xlsxwriter
 gevent
 gevent-websocket
 gunicorn
